@@ -2,14 +2,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { products } from "@/data/products";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  Search,
-  Plus,
-  Trash2,
-  Edit,
-  Filter,
-  ChevronDown,
-} from "lucide-react";
+import { Search, Plus, Trash2, Edit, ChevronDown } from "lucide-react";
 
 export default function Products() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -54,26 +47,26 @@ export default function Products() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-3xl font-bold text-foreground mb-2">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="mb-2 font-display text-2xl font-bold text-foreground sm:text-3xl">
               Products
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm text-muted-foreground sm:text-base">
               Manage all {products.length} products in your store
             </p>
           </div>
           <Link
             to="/dashboard/products/new"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+            className="inline-flex min-h-[2.75rem] w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:w-auto"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="h-5 w-5 shrink-0" />
             Add Product
           </Link>
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-card border border-border rounded-xl p-4 space-y-4">
+        <div className="space-y-4 rounded-xl border border-border bg-card p-3 sm:p-4">
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
@@ -87,7 +80,7 @@ export default function Products() {
           </div>
 
           {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
             {/* Category Filter */}
             <div>
               <label className="block text-sm font-semibold text-foreground mb-2">
@@ -131,7 +124,7 @@ export default function Products() {
             </div>
 
             {/* Results */}
-            <div className="flex items-end">
+            <div className="flex items-end sm:col-span-2 md:col-span-1">
               <p className="text-sm text-muted-foreground">
                 Showing <span className="font-semibold">{filteredProducts.length}</span> of{" "}
                 <span className="font-semibold">{products.length}</span> products
@@ -140,10 +133,83 @@ export default function Products() {
           </div>
         </div>
 
-        {/* Products Table */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
+        {/* Products: mobile cards */}
+        <div className="md:hidden">
+          {filteredProducts.length === 0 ? (
+            <div className="rounded-xl border border-border bg-card px-4 py-12 text-center">
+              <p className="text-muted-foreground">
+                No products found. Try adjusting your filters.
+              </p>
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {filteredProducts.map((product) => (
+                <li
+                  key={product.id}
+                  className="rounded-xl border border-border bg-card p-4"
+                >
+                  <div className="flex gap-3">
+                    <span className="shrink-0 text-3xl" aria-hidden>
+                      {product.image}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold text-foreground">{product.name}</p>
+                      <p className="text-xs text-muted-foreground">{product.sku}</p>
+                      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm">
+                        <span className="text-muted-foreground">{product.category}</span>
+                        <span className="font-semibold text-foreground">
+                          ${product.price.toFixed(2)}
+                        </span>
+                        {product.originalPrice && (
+                          <span className="text-xs text-muted-foreground line-through">
+                            ${product.originalPrice.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span
+                          className={`inline-block rounded px-2 py-1 text-xs font-semibold ${
+                            product.inStock
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          Stock {product.stockCount}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          Rating{" "}
+                          <span className="font-semibold text-foreground">{product.rating}</span>
+                        </span>
+                      </div>
+                      <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
+                        <Link
+                          to={`/dashboard/products/${product.id}/edit`}
+                          className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-muted/50 py-2 text-sm font-semibold text-primary"
+                        >
+                          <Edit className="h-4 w-4" />
+                          Edit
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(product.id)}
+                          className="inline-flex items-center justify-center rounded-lg border border-destructive/30 bg-destructive/5 p-2 text-destructive"
+                          title="Delete product"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Products Table — md+ */}
+        <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[720px]">
               <thead>
                 <tr className="border-b border-border bg-muted/50">
                   <th className="text-left px-6 py-4 font-semibold text-foreground">
@@ -241,7 +307,7 @@ export default function Products() {
           </div>
 
           {filteredProducts.length === 0 && (
-            <div className="px-6 py-12 text-center">
+            <div className="px-4 py-12 text-center sm:px-6">
               <p className="text-muted-foreground">
                 No products found. Try adjusting your filters.
               </p>

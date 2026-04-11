@@ -114,22 +114,24 @@ export default function ProductEdit() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex min-w-0 items-start gap-3 sm:items-center sm:justify-between">
+          <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center sm:gap-4">
             <button
+              type="button"
               onClick={() => navigate("/dashboard/products")}
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
+              className="mt-0.5 shrink-0 rounded-lg p-2 transition-colors hover:bg-muted sm:mt-0"
+              aria-label="Back to products"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="h-5 w-5" />
             </button>
-            <div>
-              <h1 className="font-display text-3xl font-bold text-foreground">
+            <div className="min-w-0">
+              <h1 className="font-display text-2xl font-bold text-foreground sm:text-3xl">
                 {isNew ? "Create Product" : "Edit Product"}
               </h1>
-              <p className="text-muted-foreground">
+              <p className="truncate text-sm text-muted-foreground sm:text-base">
                 {isNew
                   ? "Add a new product to your store"
-                  : `Editing: ${product?.name}`}
+                  : `Editing: ${product?.name ?? ""}`}
               </p>
             </div>
           </div>
@@ -138,8 +140,8 @@ export default function ProductEdit() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
-          <div className="bg-card border border-border rounded-xl p-6 space-y-6">
-            <h2 className="font-semibold text-foreground text-lg">
+          <div className="space-y-6 rounded-xl border border-border bg-card p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-foreground">
               Basic Information
             </h2>
 
@@ -201,8 +203,8 @@ export default function ProductEdit() {
           </div>
 
           {/* Product Images */}
-          <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-            <h2 className="font-semibold text-foreground text-lg">
+          <div className="space-y-4 rounded-xl border border-border bg-card p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-foreground">
               Product Images
             </h2>
             <ProductImageUpload
@@ -213,8 +215,8 @@ export default function ProductEdit() {
           </div>
 
           {/* Pricing & Stock */}
-          <div className="bg-card border border-border rounded-xl p-6 space-y-6">
-            <h2 className="font-semibold text-foreground text-lg">
+          <div className="space-y-6 rounded-xl border border-border bg-card p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-foreground">
               Pricing & Stock
             </h2>
 
@@ -274,7 +276,13 @@ export default function ProductEdit() {
                   />
                 </div>
 
-                <div className="flex items-end">
+                <div>
+                  <span
+                    className="block text-sm font-semibold text-foreground mb-2 invisible select-none"
+                    aria-hidden
+                  >
+                    Category
+                  </span>
                   <label className="flex items-center gap-2 text-sm">
                     <input
                       type="checkbox"
@@ -295,11 +303,11 @@ export default function ProductEdit() {
                 </label>
                 <div className="space-y-3 flex-1 flex flex-col">
                   {/* Toggle buttons */}
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
                       onClick={() => setSaleType("price")}
-                      className={`flex-1 px-3 py-2 rounded-lg font-semibold transition-colors ${
+                      className={`min-h-[2.75rem] min-w-0 flex-1 px-2 py-2 text-sm font-semibold transition-colors sm:px-3 sm:text-base rounded-lg ${
                         saleType === "price"
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted text-foreground hover:bg-muted/80"
@@ -310,7 +318,7 @@ export default function ProductEdit() {
                     <button
                       type="button"
                       onClick={() => setSaleType("percentage")}
-                      className={`flex-1 px-3 py-2 rounded-lg font-semibold transition-colors ${
+                      className={`min-h-[2.75rem] min-w-0 flex-1 px-2 py-2 text-sm font-semibold transition-colors sm:px-3 sm:text-base rounded-lg ${
                         saleType === "percentage"
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted text-foreground hover:bg-muted/80"
@@ -375,8 +383,8 @@ export default function ProductEdit() {
           </div>
 
           {/* Tags & Features */}
-          <div className="bg-card border border-border rounded-xl p-6 space-y-6">
-            <h2 className="font-semibold text-foreground text-lg">
+          <div className="space-y-6 rounded-xl border border-border bg-card p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-foreground">
               Tags & Features
             </h2>
 
@@ -385,19 +393,19 @@ export default function ProductEdit() {
               <label className="block text-sm font-semibold text-foreground mb-2">
                 Tags
               </label>
-              <div className="flex gap-2 mb-3">
+              <div className="mb-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-stretch">
                 <input
                   type="text"
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
                   placeholder="Add a tag..."
-                  className="flex-1 px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="min-h-[2.75rem] min-w-0 flex-1 rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
                 <button
                   type="button"
                   onClick={handleAddTag}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90"
+                  className="shrink-0 whitespace-nowrap rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground hover:bg-primary/90 sm:min-w-[5rem]"
                 >
                   Add
                 </button>
@@ -426,19 +434,19 @@ export default function ProductEdit() {
               <label className="block text-sm font-semibold text-foreground mb-2">
                 Care Instructions
               </label>
-              <div className="flex gap-2 mb-3">
+              <div className="mb-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-stretch">
                 <input
                   type="text"
                   value={newCare}
                   onChange={(e) => setNewCare(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && handleAddCare()}
                   placeholder="Add care instruction..."
-                  className="flex-1 px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="min-h-[2.75rem] min-w-0 flex-1 rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
                 <button
                   type="button"
                   onClick={handleAddCare}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90"
+                  className="shrink-0 whitespace-nowrap rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground hover:bg-primary/90 sm:min-w-[5rem]"
                 >
                   Add
                 </button>
@@ -464,17 +472,17 @@ export default function ProductEdit() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-4">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <button
               type="submit"
-              className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+              className="inline-flex min-h-[2.75rem] w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:w-auto"
             >
-              <Save className="w-5 h-5" />
+              <Save className="h-5 w-5 shrink-0" />
               {isNew ? "Create Product" : "Save Changes"}
             </button>
             <Link
               to="/dashboard/products"
-              className="px-6 py-3 border-2 border-border text-foreground rounded-lg font-semibold hover:bg-muted transition-colors"
+              className="inline-flex min-h-[2.75rem] w-full items-center justify-center whitespace-nowrap rounded-lg border-2 border-border px-6 py-3 text-center font-semibold text-foreground transition-colors hover:bg-muted sm:w-auto"
             >
               Cancel
             </Link>

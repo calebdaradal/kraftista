@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -18,9 +18,35 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => typeof window !== "undefined" && window.innerWidth >= 768
+  );
+  const sidebarOpenRef = useRef(sidebarOpen);
+  sidebarOpenRef.current = sidebarOpen;
   const location = useLocation();
   const { user, logout } = useAuth();
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    if (mq.matches) setSidebarOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const syncScrollLock = () => {
+      if (!mq.matches) {
+        document.body.style.overflow = "";
+        return;
+      }
+      document.body.style.overflow = sidebarOpenRef.current ? "hidden" : "";
+    };
+    syncScrollLock();
+    mq.addEventListener("change", syncScrollLock);
+    return () => {
+      mq.removeEventListener("change", syncScrollLock);
+      document.body.style.overflow = "";
+    };
+  }, [sidebarOpen]);
 
   const navItems = [
     {
@@ -48,12 +74,26 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const isActive = (href: string) => location.pathname === href;
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
+      {sidebarOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-label="Close navigation"
+        />
+      )}
+
       {/* Sidebar */}
       <aside
         className={cn(
-          "bg-card border-r border-border transition-all duration-300 flex flex-col",
-          sidebarOpen ? "w-64" : "w-20"
+          "bg-card border-r border-border transition-all duration-300 ease-out flex flex-col z-40 flex-shrink-0",
+          "fixed inset-y-0 left-0 h-full md:static md:h-screen",
+          "w-64",
+          sidebarOpen
+            ? "translate-x-0 md:w-64"
+            : "-translate-x-full md:translate-x-0 md:w-20",
+          "max-md:shadow-xl"
         )}
       >
         {/* Logo */}
@@ -82,6 +122,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <Link
                 key={item.href}
                 to={item.href}
+                onClick={() => {
+                  if (window.innerWidth < 768) setSidebarOpen(false);
+                }}
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
                   active
@@ -130,28 +173,32 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {/* Top Bar */}
-        <div className="bg-card border-b border-border p-4 flex items-center justify-between">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-card p-3 sm:p-4">
           <button
+            type="button"
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            className="shrink-0 rounded-lg p-2 transition-colors hover:bg-muted"
+            aria-expanded={sidebarOpen}
+            aria-label={sidebarOpen ? "Collapse navigation" : "Open navigation"}
           >
             {sidebarOpen ? (
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" />
             ) : (
-              <Menu className="w-5 h-5" />
+              <Menu className="h-5 w-5" />
             )}
           </button>
 
-          <div className="text-sm text-muted-foreground">
-            Welcome back, <span className="font-semibold text-foreground">{user?.name}</span>!
+          <div className="min-w-0 truncate text-right text-xs text-muted-foreground sm:text-sm">
+            Welcome back,{" "}
+            <span className="font-semibold text-foreground">{user?.name}</span>!
           </div>
         </div>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-auto p-6">
-          <div className="max-w-7xl mx-auto">
+        <main className="min-h-0 flex-1 overflow-auto p-4 sm:p-6">
+          <div className="mx-auto max-w-7xl">
             {children}
           </div>
         </main>
