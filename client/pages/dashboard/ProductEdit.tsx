@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { getProductById, products } from "@/data/products";
 import { useState } from "react";
 import { ArrowLeft, Save, X } from "lucide-react";
+import { ProductImageUpload } from "@/components/ProductImageUpload";
 
 export default function ProductEdit() {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +37,10 @@ export default function ProductEdit() {
 
   const [newTag, setNewTag] = useState("");
   const [newCare, setNewCare] = useState("");
+  const [images, setImages] = useState<string[]>(product?.gallery || []);
+  const [thumbnailIndex, setThumbnailIndex] = useState(0);
+  const [saleType, setSaleType] = useState<"price" | "percentage">("price");
+  const [saleValue, setSaleValue] = useState<number | "">(formData.originalPrice || "");
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -85,6 +90,16 @@ export default function ProductEdit() {
     setFormData({
       ...formData,
       care: (formData.care || []).filter((_, i) => i !== index),
+    });
+  };
+
+  const handleImagesChange = (newImages: string[], newThumbnailIndex: number) => {
+    setImages(newImages);
+    setThumbnailIndex(newThumbnailIndex);
+    // Update gallery in formData
+    setFormData({
+      ...formData,
+      gallery: newImages,
     });
   };
 
@@ -185,6 +200,18 @@ export default function ProductEdit() {
             </div>
           </div>
 
+          {/* Product Images */}
+          <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+            <h2 className="font-semibold text-foreground text-lg">
+              Product Images
+            </h2>
+            <ProductImageUpload
+              images={images}
+              thumbnailIndex={thumbnailIndex}
+              onChange={handleImagesChange}
+            />
+          </div>
+
           {/* Pricing & Stock */}
           <div className="bg-card border border-border rounded-xl p-6 space-y-6">
             <h2 className="font-semibold text-foreground text-lg">
@@ -192,83 +219,157 @@ export default function ProductEdit() {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Price
-                </label>
-                <input
-                  type="number"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  step="0.01"
-                  className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Original Price (Sale)
-                </label>
-                <input
-                  type="number"
-                  name="originalPrice"
-                  value={formData.originalPrice || ""}
-                  onChange={handleInputChange}
-                  step="0.01"
-                  className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Stock Count
-                </label>
-                <input
-                  type="number"
-                  name="stockCount"
-                  value={formData.stockCount}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Category
-                </label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option>Ceramics</option>
-                  <option>Woodcraft</option>
-                  <option>Textiles</option>
-                  <option>Leather</option>
-                  <option>Jewelry</option>
-                  <option>Personal Care</option>
-                  <option>Gardening</option>
-                  <option>Kitchen</option>
-                </select>
-              </div>
-
-              <div className="flex items-end">
-                <label className="flex items-center gap-2 text-sm">
+              {/* Left column: Price and Category */}
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-foreground mb-2">
+                    Price
+                  </label>
                   <input
-                    type="checkbox"
-                    name="inStock"
-                    checked={formData.inStock}
+                    type="number"
+                    name="price"
+                    value={formData.price}
                     onChange={handleInputChange}
-                    className="w-4 h-4 rounded border-border bg-input"
+                    step="0.01"
+                    className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
                   />
-                  <span className="font-semibold text-foreground">In Stock</span>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-foreground mb-2">
+                    Category
+                  </label>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option>Ceramics</option>
+                    <option>Woodcraft</option>
+                    <option>Textiles</option>
+                    <option>Leather</option>
+                    <option>Jewelry</option>
+                    <option>Personal Care</option>
+                    <option>Gardening</option>
+                    <option>Kitchen</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Middle column: Stock Count and In Stock */}
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-foreground mb-2">
+                    Stock Count
+                  </label>
+                  <input
+                    type="number"
+                    name="stockCount"
+                    value={formData.stockCount}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  />
+                </div>
+
+                <div className="flex items-end">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      name="inStock"
+                      checked={formData.inStock}
+                      onChange={handleInputChange}
+                      className="w-4 h-4 rounded border-border bg-input"
+                    />
+                    <span className="font-semibold text-foreground">In Stock</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Right column: Sale */}
+              <div className="flex flex-col">
+                <label className="block text-sm font-semibold text-foreground mb-2">
+                  Sale
                 </label>
+                <div className="space-y-3 flex-1 flex flex-col">
+                  {/* Toggle buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSaleType("price")}
+                      className={`flex-1 px-3 py-2 rounded-lg font-semibold transition-colors ${
+                        saleType === "price"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      Sale price
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSaleType("percentage")}
+                      className={`flex-1 px-3 py-2 rounded-lg font-semibold transition-colors ${
+                        saleType === "percentage"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      Sale %
+                    </button>
+                  </div>
+                  {/* Input field */}
+                  <input
+                    type="number"
+                    value={saleValue}
+                    onChange={(e) => {
+                      const value = e.target.value === "" ? "" : parseFloat(e.target.value);
+                      setSaleValue(value);
+                      setFormData({
+                        ...formData,
+                        originalPrice: value === "" ? undefined : value,
+                      });
+                    }}
+                    step={saleType === "percentage" ? "1" : "0.01"}
+                    min="0"
+                    max={saleType === "percentage" ? "100" : undefined}
+                    placeholder={saleType === "percentage" ? "Enter percentage (0-100)" : "Enter sale price"}
+                    className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+
+                  {/* Price preview - Fixed height container */}
+                  <div className="mt-auto min-h-24 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                    {saleValue !== "" ? (
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-muted-foreground">Regular price:</span>
+                          <span className="font-semibold text-foreground">${formData.price.toFixed(2)}</span>
+                        </div>
+                        {saleType === "percentage" && (
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-muted-foreground">Discount:</span>
+                            <span className="font-semibold text-primary">{saleValue}% off</span>
+                          </div>
+                        )}
+                        <div className="border-t border-primary/20 pt-2 flex justify-between items-center">
+                          <span className="text-sm font-semibold text-foreground">Final price:</span>
+                          <span className="text-lg font-bold text-primary">
+                            ${(
+                              saleType === "percentage"
+                                ? formData.price * (1 - saleValue / 100)
+                                : saleValue
+                            ).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                        Enter a sale value to see preview
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
