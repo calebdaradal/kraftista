@@ -236,9 +236,23 @@ export default function ProductEdit() {
 
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">
+                  Stock Count
+                </label>
+                <input
+                  type="number"
+                  name="stockCount"
+                  value={formData.stockCount}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col">
+                <label className="block text-sm font-semibold text-foreground mb-2">
                   Sale
                 </label>
-                <div className="space-y-3">
+                <div className="space-y-3 flex-1 flex flex-col">
                   {/* Toggle buttons */}
                   <div className="flex gap-2">
                     <button
@@ -283,9 +297,9 @@ export default function ProductEdit() {
                     className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   />
 
-                  {/* Price preview */}
-                  {saleValue !== "" && (
-                    <div className="mt-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  {/* Price preview - Fixed height container */}
+                  <div className="mt-auto min-h-24 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                    {saleValue !== "" ? (
                       <div className="space-y-2">
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-muted-foreground">Regular price:</span>
@@ -308,23 +322,13 @@ export default function ProductEdit() {
                           </span>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                        Enter a sale value to see preview
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Stock Count
-                </label>
-                <input
-                  type="number"
-                  name="stockCount"
-                  value={formData.stockCount}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                />
               </div>
             </div>
 
