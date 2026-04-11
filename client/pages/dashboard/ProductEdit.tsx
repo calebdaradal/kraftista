@@ -218,7 +218,7 @@ export default function ProductEdit() {
               Pricing & Stock
             </h2>
 
-            <div className="space-y-4">
+            <div className="space-y-2">
               {/* First row: Price, Stock, Sale */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
