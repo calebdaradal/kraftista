@@ -19,16 +19,27 @@ export function ProductImageUpload({
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    let loadedCount = 0;
+    const newImages: string[] = [...images];
+
     files.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (event) => {
         const dataUrl = event.target?.result as string;
-        const newImages = [...images, dataUrl];
-        const newThumbnailIndex = images.length === 0 ? 0 : thumbnailIndex;
-        onChange(newImages, newThumbnailIndex);
+        newImages.push(dataUrl);
+        loadedCount++;
+
+        // Call onChange only after all files are loaded
+        if (loadedCount === files.length) {
+          const newThumbnailIndex = images.length === 0 ? 0 : thumbnailIndex;
+          onChange(newImages, newThumbnailIndex);
+        }
       };
       reader.readAsDataURL(file);
     });
+
     // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -70,7 +81,10 @@ export function ProductImageUpload({
     e.preventDefault();
     setDragOverIndex(null);
 
-    if (draggedIndex === null || draggedIndex === dropIndex) return;
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      return;
+    }
 
     const newImages = [...images];
     const [draggedImage] = newImages.splice(draggedIndex, 1);
@@ -94,6 +108,11 @@ export function ProductImageUpload({
 
     onChange(newImages, newThumbnailIndex);
     setDraggedIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
   return (
@@ -129,6 +148,7 @@ export function ProductImageUpload({
               onDragOver={(e) => handleDragOver(e, index)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, index)}
+              onDragEnd={handleDragEnd}
               className={cn(
                 "relative group rounded-lg overflow-hidden border-2 aspect-square bg-muted cursor-move transition-all",
                 dragOverIndex === index && draggedIndex !== index
