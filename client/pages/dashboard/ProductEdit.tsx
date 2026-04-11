@@ -282,6 +282,34 @@ export default function ProductEdit() {
                     placeholder={saleType === "percentage" ? "Enter percentage (0-100)" : "Enter sale price"}
                     className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   />
+
+                  {/* Price preview */}
+                  {saleValue !== "" && (
+                    <div className="mt-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-muted-foreground">Regular price:</span>
+                          <span className="font-semibold text-foreground">${formData.price.toFixed(2)}</span>
+                        </div>
+                        {saleType === "percentage" && (
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-muted-foreground">Discount:</span>
+                            <span className="font-semibold text-primary">{saleValue}% off</span>
+                          </div>
+                        )}
+                        <div className="border-t border-primary/20 pt-2 flex justify-between items-center">
+                          <span className="text-sm font-semibold text-foreground">Final price:</span>
+                          <span className="text-lg font-bold text-primary">
+                            ${(
+                              saleType === "percentage"
+                                ? formData.price * (1 - saleValue / 100)
+                                : saleValue
+                            ).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
