@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { getProductById, products } from "@/data/products";
 import { useState } from "react";
 import { ArrowLeft, Save, X } from "lucide-react";
+import { ProductImageUpload } from "@/components/ProductImageUpload";
 
 export default function ProductEdit() {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +37,8 @@ export default function ProductEdit() {
 
   const [newTag, setNewTag] = useState("");
   const [newCare, setNewCare] = useState("");
+  const [images, setImages] = useState<string[]>(product?.gallery || []);
+  const [thumbnailIndex, setThumbnailIndex] = useState(0);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -85,6 +88,16 @@ export default function ProductEdit() {
     setFormData({
       ...formData,
       care: (formData.care || []).filter((_, i) => i !== index),
+    });
+  };
+
+  const handleImagesChange = (newImages: string[], newThumbnailIndex: number) => {
+    setImages(newImages);
+    setThumbnailIndex(newThumbnailIndex);
+    // Update gallery in formData
+    setFormData({
+      ...formData,
+      gallery: newImages,
     });
   };
 
@@ -183,6 +196,18 @@ export default function ProductEdit() {
                 className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
               />
             </div>
+          </div>
+
+          {/* Product Images */}
+          <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+            <h2 className="font-semibold text-foreground text-lg">
+              Product Images
+            </h2>
+            <ProductImageUpload
+              images={images}
+              thumbnailIndex={thumbnailIndex}
+              onChange={handleImagesChange}
+            />
           </div>
 
           {/* Pricing & Stock */}
