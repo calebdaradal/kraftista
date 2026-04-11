@@ -61,7 +61,17 @@ export function ProductImageUpload({
   };
 
   const handleSetThumbnail = (index: number) => {
-    onChange(images, index);
+    // Move the selected image to the first position
+    if (index === 0) {
+      onChange(images, 0);
+      return;
+    }
+
+    const newImages = [...images];
+    const [selectedImage] = newImages.splice(index, 1);
+    newImages.unshift(selectedImage);
+
+    onChange(newImages, 0);
   };
 
   const handleDragStart = (index: number) => {
@@ -165,14 +175,14 @@ export function ProductImageUpload({
               />
 
               {/* Overlay */}
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                 {/* Drag handle */}
                 <button
                   type="button"
-                  className="p-1.5 bg-muted rounded hover:bg-primary/80"
+                  className="p-2.5 bg-muted rounded hover:bg-primary/80 transition-colors"
                   title="Drag to reorder"
                 >
-                  <GripVertical className="w-3 h-3 text-foreground" />
+                  <GripVertical className="w-4 h-4 text-foreground" />
                 </button>
 
                 {/* Thumbnail button */}
@@ -180,7 +190,7 @@ export function ProductImageUpload({
                   type="button"
                   onClick={() => handleSetThumbnail(index)}
                   className={cn(
-                    "p-1.5 rounded transition-colors",
+                    "p-2.5 rounded transition-colors",
                     thumbnailIndex === index
                       ? "bg-primary"
                       : "bg-muted hover:bg-primary/80"
@@ -193,7 +203,7 @@ export function ProductImageUpload({
                 >
                   <Star
                     className={cn(
-                      "w-3 h-3",
+                      "w-4 h-4",
                       thumbnailIndex === index
                         ? "fill-primary-foreground text-primary-foreground"
                         : "text-foreground"
@@ -205,10 +215,10 @@ export function ProductImageUpload({
                 <button
                   type="button"
                   onClick={() => handleRemoveImage(index)}
-                  className="p-1.5 bg-destructive/80 rounded hover:bg-destructive"
+                  className="p-2.5 bg-destructive/80 rounded hover:bg-destructive transition-colors"
                   title="Remove image"
                 >
-                  <X className="w-3 h-3 text-destructive-foreground" />
+                  <X className="w-4 h-4 text-destructive-foreground" />
                 </button>
               </div>
 
