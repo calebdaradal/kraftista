@@ -39,6 +39,8 @@ export default function ProductEdit() {
   const [newCare, setNewCare] = useState("");
   const [images, setImages] = useState<string[]>(product?.gallery || []);
   const [thumbnailIndex, setThumbnailIndex] = useState(0);
+  const [saleType, setSaleType] = useState<"price" | "percentage">("price");
+  const [saleValue, setSaleValue] = useState<number | "">(formData.originalPrice || "");
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -234,16 +236,53 @@ export default function ProductEdit() {
 
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">
-                  Original Price (Sale)
+                  Sale
                 </label>
-                <input
-                  type="number"
-                  name="originalPrice"
-                  value={formData.originalPrice || ""}
-                  onChange={handleInputChange}
-                  step="0.01"
-                  className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                />
+                <div className="space-y-3">
+                  {/* Toggle buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSaleType("price")}
+                      className={`flex-1 px-3 py-2 rounded-lg font-semibold transition-colors ${
+                        saleType === "price"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      Sale price
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSaleType("percentage")}
+                      className={`flex-1 px-3 py-2 rounded-lg font-semibold transition-colors ${
+                        saleType === "percentage"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      Sale %
+                    </button>
+                  </div>
+                  {/* Input field */}
+                  <input
+                    type="number"
+                    value={saleValue}
+                    onChange={(e) => {
+                      const value = e.target.value === "" ? "" : parseFloat(e.target.value);
+                      setSaleValue(value);
+                      setFormData({
+                        ...formData,
+                        originalPrice: value === "" ? undefined : value,
+                      });
+                    }}
+                    step={saleType === "percentage" ? "1" : "0.01"}
+                    min="0"
+                    max={saleType === "percentage" ? "100" : undefined}
+                    placeholder={saleType === "percentage" ? "Enter percentage (0-100)" : "Enter sale price"}
+                    className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
               </div>
 
               <div>
