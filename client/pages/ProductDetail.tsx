@@ -1,6 +1,13 @@
 import { Layout } from "@/components/layout/Layout";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { getProductById, getRelatedProducts } from "@/data/products";
+import {
+  getProductById,
+  getRelatedProducts,
+  computeVariantLinePrice,
+  resolveLineImageForCart,
+  isVariationSelectionComplete,
+  firstMissingVariationName,
+} from "@/data/products";
 import { Heart, ShoppingCart, Star, Check, X, Truck, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/context/CartContext";
@@ -44,17 +51,46 @@ export default function ProductDetail() {
     );
   }
 
+  if (!product.active) {
+    return (
+      <Layout>
+        <section className="py-20 text-center">
+          <div className="container mx-auto px-4">
+            <h1 className="text-3xl font-bold text-foreground mb-4">
+              Product unavailable
+            </h1>
+            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+              This product is not listed in the shop right now. Check back later or browse our
+              collection.
+            </p>
+            <Link
+              to="/shop"
+              className="inline-block px-8 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+            >
+              Back to Shop
+            </Link>
+          </div>
+        </section>
+      </Layout>
+    );
+  }
+
   const discount = product.originalPrice
     ? Math.round(
         ((product.originalPrice - product.price) / product.originalPrice) * 100
       )
     : 0;
 
+  const hasVariationTiers =
+    (product.primaryVariation?.options?.length ?? 0) > 0 ||
+    (product.secondaryVariation?.options?.length ?? 0) > 0 ||
+    (product.tertiaryVariation?.options?.length ?? 0) > 0;
+
   const canAddToCart =
-    !product.variations ||
-    product.variations.every(
-      (variation) => selectedVariations[variation.id]
-    );
+    !hasVariationTiers || isVariationSelectionComplete(product, selectedVariations);
+
+  const linePrice = computeVariantLinePrice(product, selectedVariations);
+  const missingVariationName = firstMissingVariationName(product, selectedVariations);
 
   const handleAddToCart = () => {
     if (!canAddToCart) return;
@@ -63,8 +99,8 @@ export default function ProductDetail() {
       productId: product.id,
       quantity,
       selectedVariations,
-      price: product.price,
-      image: product.image,
+      price: linePrice,
+      image: resolveLineImageForCart(product, selectedVariations),
       name: product.name,
     });
 
@@ -82,8 +118,23 @@ export default function ProductDetail() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mb-12">
             {/* Product Image */}
             <div className="flex items-center justify-center">
-              <div className="relative w-full aspect-square bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl flex items-center justify-center">
-                <div className="text-9xl">{product.image}</div>
+              <div className="relative flex aspect-square w-full items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-secondary/10">
+                {(() => {
+                  const pv = product.primaryVariation;
+                  const pl = pv ? selectedVariations[pv.collectionName] : undefined;
+                  const opt = pv?.options.find((o) => o.label === pl);
+                  const src = opt?.image;
+                  if (src && src.startsWith("data:")) {
+                    return (
+                      <img
+                        src={src}
+                        alt=""
+                        className="max-h-[85%] max-w-[85%] rounded-lg object-contain shadow-md"
+                      />
+                    );
+                  }
+                  return <div className="text-9xl">{product.image}</div>;
+                })()}
                 {product.originalPrice && (
                   <div className="absolute top-4 right-4 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-bold">
                     -{discount}%
@@ -149,7 +200,7 @@ export default function ProductDetail() {
               <div className="border-t border-b border-border py-6 space-y-4">
                 <div className="flex items-baseline gap-3">
                   <span className="text-4xl font-bold text-primary">
-                    ${product.price.toFixed(2)}
+                    ${linePrice.toFixed(2)}
                   </span>
                   {product.originalPrice && (
                     <span className="text-lg text-muted-foreground line-through">
@@ -178,37 +229,146 @@ export default function ProductDetail() {
                 </div>
               </div>
 
-              {/* Variations */}
-              {product.variations && product.variations.length > 0 && (
-                <div className="space-y-4 border-t border-b border-border py-4">
-                  {product.variations.map((variation) => (
-                    <div key={variation.id}>
-                      <label className="block text-sm font-semibold text-foreground mb-2">
-                        {variation.name}
-                        <span className="text-destructive ml-1">*</span>
-                      </label>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        {variation.options.map((option) => (
-                          <button
-                            key={option.id}
-                            onClick={() =>
-                              setSelectedVariations({
-                                ...selectedVariations,
-                                [variation.id]: option.label,
-                              })
-                            }
-                            className={`px-4 py-2 rounded-lg border-2 font-medium transition-colors ${
-                              selectedVariations[variation.id] === option.label
-                                ? "bg-primary text-primary-foreground border-primary"
-                                : "border-border text-foreground hover:border-primary"
-                            }`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
+              {/* Variations — primary / secondary / tertiary */}
+              {hasVariationTiers && (
+                <div className="space-y-6 border-t border-b border-border py-4">
+                  {product.primaryVariation &&
+                    product.primaryVariation.options.length > 0 && (
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold text-foreground">
+                          {product.primaryVariation.collectionName}
+                          <span className="ml-1 text-destructive">*</span>
+                        </label>
+                        <p className="mb-3 text-xs text-muted-foreground">
+                          Each option has its own price; your selection updates the price above.
+                        </p>
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                          {product.primaryVariation.options.map((option) => {
+                            const name = product.primaryVariation!.collectionName;
+                            const selected = selectedVariations[name] === option.label;
+                            return (
+                              <button
+                                key={option.id}
+                                type="button"
+                                onClick={() =>
+                                  setSelectedVariations({
+                                    ...selectedVariations,
+                                    [name]: option.label,
+                                  })
+                                }
+                                className={`flex flex-col items-stretch overflow-hidden rounded-xl border-2 text-left transition-colors ${
+                                  selected
+                                    ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                                    : "border-border hover:border-primary/50"
+                                }`}
+                              >
+                                <div className="flex aspect-square items-center justify-center bg-muted/40">
+                                  {option.image && option.image.startsWith("data:") ? (
+                                    <img
+                                      src={option.image}
+                                      alt=""
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <span className="text-4xl text-muted-foreground">—</span>
+                                  )}
+                                </div>
+                                <div className="p-2">
+                                  <span className="block text-sm font-semibold text-foreground">
+                                    {option.label}
+                                  </span>
+                                  <span className="text-xs font-medium text-primary">
+                                    ${option.price.toFixed(2)}
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )}
+
+                  {product.secondaryVariation &&
+                    product.secondaryVariation.options.length > 0 && (
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold text-foreground">
+                          {product.secondaryVariation.collectionName}
+                          <span className="ml-1 text-destructive">*</span>
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {product.secondaryVariation.options.map((option) => {
+                            const name = product.secondaryVariation!.collectionName;
+                            const selected = selectedVariations[name] === option.label;
+                            return (
+                              <button
+                                key={option.id}
+                                type="button"
+                                onClick={() =>
+                                  setSelectedVariations({
+                                    ...selectedVariations,
+                                    [name]: option.label,
+                                  })
+                                }
+                                className={`flex items-center gap-2 rounded-full border-2 py-2 pl-2 pr-4 text-sm font-medium transition-colors ${
+                                  selected
+                                    ? "border-primary bg-primary/10 ring-2 ring-primary/25"
+                                    : "border-border hover:border-primary/50"
+                                }`}
+                              >
+                                <span
+                                  className="h-8 w-8 shrink-0 rounded-full border border-border shadow-inner"
+                                  style={{ backgroundColor: option.hex }}
+                                />
+                                {option.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                  {product.tertiaryVariation &&
+                    product.tertiaryVariation.options.length > 0 && (
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold text-foreground">
+                          {product.tertiaryVariation.collectionName}
+                          <span className="ml-1 text-destructive">*</span>
+                        </label>
+                        <p className="mb-3 text-xs text-muted-foreground">
+                          Extra amounts are added on top of the design price.
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {product.tertiaryVariation.options.map((option) => {
+                            const name = product.tertiaryVariation!.collectionName;
+                            const selected = selectedVariations[name] === option.label;
+                            return (
+                              <button
+                                key={option.id}
+                                type="button"
+                                onClick={() =>
+                                  setSelectedVariations({
+                                    ...selectedVariations,
+                                    [name]: option.label,
+                                  })
+                                }
+                                className={`rounded-lg border-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+                                  selected
+                                    ? "border-primary bg-primary text-primary-foreground"
+                                    : "border-border text-foreground hover:border-primary"
+                                }`}
+                              >
+                                {option.label}
+                                {option.additionalPrice > 0 && (
+                                  <span className="ml-1.5 text-xs opacity-90">
+                                    (+${option.additionalPrice.toFixed(2)})
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                 </div>
               )}
 
@@ -255,7 +415,9 @@ export default function ProductDetail() {
                         Please select all options
                       </p>
                       <p className="text-xs text-yellow-700">
-                        You must choose a {product.variations?.find(v => !selectedVariations[v.id])?.name.toLowerCase()} before adding to cart
+                        {missingVariationName
+                          ? `Select “${missingVariationName}” and any other required options.`
+                          : "Choose all required options before adding to cart."}
                       </p>
                     </div>
                   </div>

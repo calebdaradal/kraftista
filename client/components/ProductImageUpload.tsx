@@ -10,7 +10,7 @@ interface ProductImageUploadProps {
 
 export function ProductImageUpload({
   images,
-  thumbnailIndex = 0,
+  thumbnailIndex: _thumbnailIndex = 0,
   onChange,
 }: ProductImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -33,8 +33,7 @@ export function ProductImageUpload({
 
         // Call onChange only after all files are loaded
         if (loadedCount === files.length) {
-          const newThumbnailIndex = images.length === 0 ? 0 : thumbnailIndex;
-          onChange(newImages, newThumbnailIndex);
+          onChange(newImages, 0);
         }
       };
       reader.readAsDataURL(file);
@@ -48,16 +47,7 @@ export function ProductImageUpload({
 
   const handleRemoveImage = (index: number) => {
     const newImages = images.filter((_, i) => i !== index);
-    let newThumbnailIndex = thumbnailIndex;
-
-    // Adjust thumbnail index if needed
-    if (index === thumbnailIndex && newImages.length > 0) {
-      newThumbnailIndex = 0;
-    } else if (index < thumbnailIndex) {
-      newThumbnailIndex = thumbnailIndex - 1;
-    }
-
-    onChange(newImages, newThumbnailIndex);
+    onChange(newImages, 0);
   };
 
   const handleSetThumbnail = (index: number) => {
@@ -80,6 +70,8 @@ export function ProductImageUpload({
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
+    // Thumbnail (index 0) is not a reorder drop target for other images
+    if (index === 0 && draggedIndex != null && draggedIndex > 0) return;
     setDragOverIndex(index);
   };
 
@@ -96,27 +88,17 @@ export function ProductImageUpload({
       return;
     }
 
+    // Thumbnail stays at index 0; only reorder images at index 1+
+    if (draggedIndex === 0 || dropIndex === 0) {
+      setDraggedIndex(null);
+      return;
+    }
+
     const newImages = [...images];
     const [draggedImage] = newImages.splice(draggedIndex, 1);
     newImages.splice(dropIndex, 0, draggedImage);
 
-    // Adjust thumbnail index based on the move
-    let newThumbnailIndex = thumbnailIndex;
-    if (draggedIndex === thumbnailIndex) {
-      newThumbnailIndex = dropIndex;
-    } else if (
-      draggedIndex < thumbnailIndex &&
-      dropIndex >= thumbnailIndex
-    ) {
-      newThumbnailIndex = thumbnailIndex - 1;
-    } else if (
-      draggedIndex > thumbnailIndex &&
-      dropIndex <= thumbnailIndex
-    ) {
-      newThumbnailIndex = thumbnailIndex + 1;
-    }
-
-    onChange(newImages, newThumbnailIndex);
+    onChange(newImages, 0);
     setDraggedIndex(null);
   };
 
@@ -140,7 +122,7 @@ export function ProductImageUpload({
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-foreground"
+          className="w-full flex items-center justify-center gap-2 px-4 py-4 border-2 border-dashed border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-foreground"
         >
           <Upload className="w-4 h-4" />
           <span className="text-sm font-semibold">Select Images</span>
@@ -153,18 +135,19 @@ export function ProductImageUpload({
           {images.map((image, index) => (
             <div
               key={index}
-              draggable
-              onDragStart={() => handleDragStart(index)}
+              draggable={index > 0}
+              onDragStart={() => index > 0 && handleDragStart(index)}
               onDragOver={(e) => handleDragOver(e, index)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, index)}
               onDragEnd={handleDragEnd}
               className={cn(
-                "relative group rounded-lg overflow-hidden border-2 aspect-square bg-muted cursor-move transition-all",
+                "relative group rounded-lg overflow-hidden border-2 aspect-square bg-muted transition-all",
+                index > 0 ? "cursor-move" : "cursor-default",
                 dragOverIndex === index && draggedIndex !== index
                   ? "border-primary bg-primary/10"
                   : "border-border",
-                thumbnailIndex === index && "ring-2 ring-primary ring-offset-1"
+                index === 0 && "ring-2 ring-primary ring-offset-1"
               )}
             >
               {/* Image */}
@@ -179,8 +162,18 @@ export function ProductImageUpload({
                 {/* Drag handle */}
                 <button
                   type="button"
-                  className="p-2.5 bg-muted rounded hover:bg-primary/80 transition-colors"
-                  title="Drag to reorder"
+                  className={cn(
+                    "p-2.5 rounded transition-colors",
+                    index > 0
+                      ? "bg-muted hover:bg-primary/80"
+                      : "bg-muted/50 cursor-not-allowed opacity-60"
+                  )}
+                  title={
+                    index > 0
+                      ? "Drag to reorder"
+                      : "Thumbnail stays first — reorder other images"
+                  }
+                  disabled={index === 0}
                 >
                   <GripVertical className="w-4 h-4 text-foreground" />
                 </button>
@@ -191,12 +184,12 @@ export function ProductImageUpload({
                   onClick={() => handleSetThumbnail(index)}
                   className={cn(
                     "p-2.5 rounded transition-colors",
-                    thumbnailIndex === index
+                    index === 0
                       ? "bg-primary"
                       : "bg-muted hover:bg-primary/80"
                   )}
                   title={
-                    thumbnailIndex === index
+                    index === 0
                       ? "Current thumbnail"
                       : "Set as thumbnail"
                   }
@@ -204,7 +197,7 @@ export function ProductImageUpload({
                   <Star
                     className={cn(
                       "w-4 h-4",
-                      thumbnailIndex === index
+                      index === 0
                         ? "fill-primary-foreground text-primary-foreground"
                         : "text-foreground"
                     )}
@@ -223,7 +216,7 @@ export function ProductImageUpload({
               </div>
 
               {/* Thumbnail badge */}
-              {thumbnailIndex === index && (
+              {index === 0 && (
                 <div className="absolute top-1 left-1 bg-primary text-primary-foreground rounded-full p-1">
                   <Star className="w-3 h-3 fill-current" />
                 </div>
@@ -241,8 +234,8 @@ export function ProductImageUpload({
       {/* Help text */}
       {images.length > 0 && (
         <p className="text-xs text-muted-foreground">
-          Drag images to reorder • Click star to set thumbnail • First image is
-          the primary image
+          Drag images (except the first) to reorder • Click star to move an image
+          to the front as thumbnail • The first image is always the primary image
         </p>
       )}
     </div>

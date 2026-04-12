@@ -1,18 +1,21 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { getProductById, products } from "@/data/products";
+import {
+  getProductById,
+  EMPTY_TIER_VARIATIONS,
+  type Product,
+} from "@/data/products";
 import { useState } from "react";
 import { ArrowLeft, Save, X } from "lucide-react";
 import { ProductImageUpload } from "@/components/ProductImageUpload";
+import { ProductVariationsForm } from "@/components/ProductVariationsForm";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
-export default function ProductEdit() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const isNew = id === "new";
-  const product = id && id !== "new" ? getProductById(id) : null;
-
-  const [formData, setFormData] = useState(
-    product || {
+function mergeProductWithTiers(p: Product | null): Product {
+  const tiers = EMPTY_TIER_VARIATIONS;
+  if (!p) {
+    return {
       id: "",
       name: "",
       shortDescription: "",
@@ -31,8 +34,27 @@ export default function ProductEdit() {
       weight: "",
       material: [],
       care: [],
-      variations: [],
-    }
+      active: true,
+      ...EMPTY_TIER_VARIATIONS,
+    };
+  }
+  return {
+    ...p,
+    active: p.active !== false,
+    primaryVariation: p.primaryVariation ?? tiers.primaryVariation,
+    secondaryVariation: p.secondaryVariation ?? tiers.secondaryVariation,
+    tertiaryVariation: p.tertiaryVariation ?? tiers.tertiaryVariation,
+  };
+}
+
+export default function ProductEdit() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const isNew = id === "new";
+  const product = id && id !== "new" ? getProductById(id) : null;
+
+  const [formData, setFormData] = useState<Product>(() =>
+    mergeProductWithTiers(product ?? null)
   );
 
   const [newTag, setNewTag] = useState("");
@@ -114,7 +136,7 @@ export default function ProductEdit() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex min-w-0 items-start gap-3 sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center sm:gap-4">
             <button
               type="button"
@@ -133,6 +155,32 @@ export default function ProductEdit() {
                   ? "Add a new product to your store"
                   : `Editing: ${product?.name ?? ""}`}
               </p>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3 sm:justify-end">
+            <div className="flex flex-col gap-0.5">
+              <Label htmlFor="product-active" className="text-sm font-semibold text-foreground">
+                Storefront
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {formData.active ? "Visible in shop" : "Hidden from customers"}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-xs font-medium ${formData.active ? "text-green-600" : "text-muted-foreground"}`}
+              >
+                {formData.active ? "Active" : "Off"}
+              </span>
+              <Switch
+                id="product-active"
+                checked={formData.active}
+                onCheckedChange={(active) =>
+                  setFormData((prev) => ({ ...prev, active }))
+                }
+                aria-label={formData.active ? "Product active in storefront" : "Product disabled"}
+              />
             </div>
           </div>
         </div>
@@ -360,6 +408,29 @@ export default function ProductEdit() {
                             <span className="font-semibold text-primary">{saleValue}% off</span>
                           </div>
                         )}
+                        {saleType === "price" &&
+                          typeof saleValue === "number" &&
+                          !Number.isNaN(saleValue) && (
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="text-muted-foreground">Discount:</span>
+                              <span className="font-semibold text-primary">
+                                {formData.price > 0
+                                  ? (() => {
+                                      const pct =
+                                        ((formData.price - saleValue) / formData.price) * 100;
+                                      if (pct <= 0) return "0% off";
+                                      const rounded =
+                                        pct >= 99.95 ? 100 : Math.round(pct * 10) / 10;
+                                      const label =
+                                        rounded % 1 === 0
+                                          ? String(rounded)
+                                          : rounded.toFixed(1);
+                                      return `${label}% off`;
+                                    })()
+                                  : "—"}
+                              </span>
+                            </div>
+                          )}
                         <div className="border-t border-primary/20 pt-2 flex justify-between items-center">
                           <span className="text-sm font-semibold text-foreground">Final price:</span>
                           <span className="text-lg font-bold text-primary">
@@ -380,6 +451,33 @@ export default function ProductEdit() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Variations (3 tiers) */}
+          <div className="space-y-4 rounded-xl border border-border bg-card p-4 sm:p-6">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Variations</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Three levels: <strong>Primary</strong> (designs with photos &amp; their own price),{" "}
+                <strong>Secondary</strong> (usually colors), and <strong>Tertiary</strong> (text with an
+                extra fee). Leave a section empty if you don&apos;t need it.
+              </p>
+            </div>
+            <ProductVariationsForm
+              basePrice={formData.price}
+              primaryVariation={formData.primaryVariation!}
+              secondaryVariation={formData.secondaryVariation!}
+              tertiaryVariation={formData.tertiaryVariation!}
+              onPrimaryChange={(primaryVariation) =>
+                setFormData((prev) => ({ ...prev, primaryVariation }))
+              }
+              onSecondaryChange={(secondaryVariation) =>
+                setFormData((prev) => ({ ...prev, secondaryVariation }))
+              }
+              onTertiaryChange={(tertiaryVariation) =>
+                setFormData((prev) => ({ ...prev, tertiaryVariation }))
+              }
+            />
           </div>
 
           {/* Tags & Features */}

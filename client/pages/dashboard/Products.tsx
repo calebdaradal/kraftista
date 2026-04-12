@@ -153,7 +153,14 @@ export default function Products() {
                       {product.image}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-foreground">{product.name}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate font-semibold text-foreground">{product.name}</p>
+                        {!product.active && (
+                          <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                            Off
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground">{product.sku}</p>
                       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm">
                         <span className="text-muted-foreground">{product.category}</span>
@@ -242,9 +249,14 @@ export default function Products() {
                       <div className="flex items-center gap-3">
                         <span className="text-3xl">{product.image}</span>
                         <div>
-                          <p className="font-semibold text-foreground">
-                            {product.name}
-                          </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-foreground">{product.name}</p>
+                            {!product.active && (
+                              <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                                Off
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground">
                             {product.sku}
                           </p>

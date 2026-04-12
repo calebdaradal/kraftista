@@ -52,8 +52,16 @@ export default function Cart() {
                   className="bg-card border border-border rounded-xl p-6 flex gap-6"
                 >
                   {/* Product Image */}
-                  <div className="w-24 h-24 bg-muted rounded-lg flex items-center justify-center text-3xl flex-shrink-0">
-                    {item.image}
+                  <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted text-3xl">
+                    {item.image.startsWith("data:") || item.image.startsWith("http") ? (
+                      <img
+                        src={item.image}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      item.image
+                    )}
                   </div>
 
                   {/* Product Info */}

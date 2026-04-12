@@ -217,11 +217,19 @@ export default function Settings() {
                         />
                         <span className="text-2xl">{product.image}</span>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground text-sm">
-                            {product.name}
-                          </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-medium text-foreground text-sm">
+                              {product.name}
+                            </p>
+                            {!product.active && (
+                              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                                Off
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground">
                             {product.category}
+                            {!product.active && " · Hidden from shop"}
                           </p>
                         </div>
                       </label>

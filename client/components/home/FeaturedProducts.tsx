@@ -5,7 +5,9 @@ import { useSettings } from "@/context/SettingsContext";
 
 export function FeaturedProducts() {
   const { settings } = useSettings();
-  const featuredProducts = getProductsByIds(settings.featuredProductIds);
+  const featuredProducts = getProductsByIds(settings.featuredProductIds).filter(
+    (p) => p.active
+  );
 
   return (
     <section className="py-16 md:py-24">
