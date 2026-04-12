@@ -164,7 +164,63 @@ export const products: Product[] = [
     weight: "1.2 kg",
     material: ["Ceramic", "Natural Glaze"],
     care: ["Hand wash only", "Keep away from direct heat", "Dry upright"],
-    ...cloneEmptyTierVariations(),
+    primaryVariation: {
+      collectionName: "Pattern",
+      options: [
+        {
+          id: "pattern-1",
+          label: "Geometric",
+          image: "▦",
+          price: 89.99,
+        },
+        {
+          id: "pattern-2",
+          label: "Spiral",
+          image: "◐",
+          price: 99.99,
+        },
+      ],
+    },
+    secondaryVariation: {
+      collectionName: "Glaze Color",
+      options: [
+        {
+          id: "glaze-1",
+          label: "Cream",
+          hex: "#FFFDD0",
+        },
+        {
+          id: "glaze-2",
+          label: "Ocean Blue",
+          hex: "#006994",
+        },
+        {
+          id: "glaze-3",
+          label: "Sage Green",
+          hex: "#87AE73",
+        },
+        {
+          id: "glaze-4",
+          label: "Rust",
+          hex: "#B7410E",
+        },
+      ],
+    },
+    tertiaryVariation: {
+      collectionName: "Size",
+      options: [
+        {
+          id: "size-small",
+          label: "Small",
+          additionalPrice: 0,
+        },
+        {
+          id: "size-large",
+          label: "Large",
+          additionalPrice: 25.0,
+        },
+      ],
+    },
     active: true,
   },
   {
@@ -209,7 +265,58 @@ export const products: Product[] = [
     weight: "0.4 kg",
     material: ["100% Cotton", "Natural Plant Dyes"],
     care: ["Hand wash in cold water", "Air dry in shade", "Avoid direct sunlight"],
-    ...cloneEmptyTierVariations(),
+    primaryVariation: {
+      collectionName: "Dye Type",
+      options: [
+        {
+          id: "dye-1",
+          label: "Indigo",
+          image: "🌊",
+          price: 39.99,
+        },
+        {
+          id: "dye-2",
+          label: "Turmeric",
+          image: "🌻",
+          price: 39.99,
+        },
+      ],
+    },
+    secondaryVariation: {
+      collectionName: "Base Color",
+      options: [
+        {
+          id: "base-1",
+          label: "Navy",
+          hex: "#000080",
+        },
+        {
+          id: "base-2",
+          label: "Golden",
+          hex: "#FFD700",
+        },
+        {
+          id: "base-3",
+          label: "Sunset",
+          hex: "#FF6347",
+        },
+      ],
+    },
+    tertiaryVariation: {
+      collectionName: "Usage",
+      options: [
+        {
+          id: "use-1",
+          label: "Wall Hanging",
+          additionalPrice: 0,
+        },
+        {
+          id: "use-2",
+          label: "Throw Blanket",
+          additionalPrice: 15.0,
+        },
+      ],
+    },
     active: true,
   },
   {
@@ -319,7 +426,64 @@ export const products: Product[] = [
     weight: "0.4 kg",
     material: ["100% Bamboo", "Stainless Steel Accents"],
     care: ["Hand wash only", "Air dry standing up", "Oil occasionally"],
-    ...cloneEmptyTierVariations(),
+    primaryVariation: {
+      collectionName: "Design",
+      options: [
+        {
+          id: "design-1",
+          label: "7-Piece Set",
+          image: "🥄",
+          price: 59.99,
+        },
+        {
+          id: "design-2",
+          label: "12-Piece Set",
+          image: "🍴",
+          price: 89.99,
+        },
+        {
+          id: "design-3",
+          label: "5-Piece Set",
+          image: "🔪",
+          price: 44.99,
+        },
+      ],
+    },
+    secondaryVariation: {
+      collectionName: "Finish",
+      options: [
+        {
+          id: "color-1",
+          label: "Natural",
+          hex: "#D4A574",
+        },
+        {
+          id: "color-2",
+          label: "Dark Walnut",
+          hex: "#5C4033",
+        },
+        {
+          id: "color-3",
+          label: "Honey",
+          hex: "#DEB887",
+        },
+      ],
+    },
+    tertiaryVariation: {
+      collectionName: "Handle Type",
+      options: [
+        {
+          id: "size-1",
+          label: "Standard",
+          additionalPrice: 0,
+        },
+        {
+          id: "size-2",
+          label: "Reinforced",
+          additionalPrice: 10.0,
+        },
+      ],
+    },
     active: true,
   },
 ];
