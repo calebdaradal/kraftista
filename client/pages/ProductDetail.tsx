@@ -242,11 +242,13 @@ export default function ProductDetail() {
                         <p className="mb-3 text-xs text-muted-foreground">
                           Each option has its own price; your selection updates the price above.
                         </p>
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        <div className="flex flex-wrap gap-2">
                           {product.primaryVariation.options.map((option) => {
                             const name = product.primaryVariation!.collectionName;
                             const selected = selectedVariations[name] === option.label;
-                            return (
+                            const hasImage = option.image && option.image.startsWith("data:");
+
+                            return hasImage ? (
                               <button
                                 key={option.id}
                                 type="button"
@@ -256,31 +258,46 @@ export default function ProductDetail() {
                                     [name]: option.label,
                                   })
                                 }
-                                className={`flex flex-col items-stretch overflow-hidden rounded-xl border-2 text-left transition-colors ${
-                                  selected
-                                    ? "border-primary bg-primary/10 ring-2 ring-primary/30"
-                                    : "border-border hover:border-primary/50"
+                                className={`flex flex-col items-center gap-1 transition-colors ${
+                                  selected ? "opacity-100" : "opacity-75 hover:opacity-100"
                                 }`}
                               >
-                                <div className="flex aspect-square items-center justify-center bg-muted/40">
-                                  {option.image && option.image.startsWith("data:") ? (
-                                    <img
-                                      src={option.image}
-                                      alt=""
-                                      className="h-full w-full object-cover"
-                                    />
-                                  ) : (
-                                    <span className="text-4xl text-muted-foreground">—</span>
-                                  )}
+                                <div className={`w-12 h-12 rounded-lg border-2 overflow-hidden flex items-center justify-center bg-muted/40 transition-colors ${
+                                  selected
+                                    ? "border-primary ring-2 ring-primary/30"
+                                    : "border-border hover:border-primary/50"
+                                }`}>
+                                  <img
+                                    src={option.image}
+                                    alt={option.label}
+                                    className="w-full h-full object-cover"
+                                  />
                                 </div>
-                                <div className="p-2">
-                                  <span className="block text-sm font-semibold text-foreground">
-                                    {option.label}
-                                  </span>
-                                  <span className="text-xs font-medium text-primary">
-                                    ${option.price.toFixed(2)}
-                                  </span>
+                                <div className="text-center">
+                                  <p className="text-xs font-semibold text-foreground">{option.label}</p>
+                                  <p className="text-xs font-medium text-primary">${option.price.toFixed(2)}</p>
                                 </div>
+                              </button>
+                            ) : (
+                              <button
+                                key={option.id}
+                                type="button"
+                                onClick={() =>
+                                  setSelectedVariations({
+                                    ...selectedVariations,
+                                    [name]: option.label,
+                                  })
+                                }
+                                className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${
+                                  selected
+                                    ? "border-primary bg-primary text-primary-foreground"
+                                    : "border-border text-foreground hover:border-primary/50"
+                                }`}
+                              >
+                                {option.label}
+                                <span className="ml-1.5 text-xs opacity-90">
+                                  (${option.price.toFixed(2)})
+                                </span>
                               </button>
                             );
                           })}
