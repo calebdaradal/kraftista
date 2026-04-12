@@ -1,12 +1,19 @@
-import { Link } from "react-router-dom";
-import { ShoppingCart, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ShoppingCart, Menu, X, User, LogOut } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
+import { useUser } from "@/context/UserContext";
+import { CheckoutModal } from "@/components/CheckoutModal";
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const { itemCount } = useCart();
+  const { user, logout } = useUser();
 
   const navLinks = [
     { label: "Home", href: "/" },
@@ -14,6 +21,32 @@ export function Header() {
     { label: "About", href: "/about" },
     { label: "Contact", href: "/contact" },
   ];
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsUserMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    setIsUserMenuOpen(false);
+    navigate("/");
+  };
+
+  const handleProfileClick = () => {
+    navigate("/profile");
+    setIsUserMenuOpen(false);
+  };
 
   return (
     <header className="border-b border-border bg-background sticky top-0 z-50">
@@ -51,7 +84,7 @@ export function Header() {
           </nav>
 
           {/* Right Side Actions */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Link to="/cart" className="relative p-2 hover:bg-muted rounded-lg transition-colors">
               <ShoppingCart className="w-5 h-5 text-foreground" />
               {itemCount > 0 && (
@@ -60,6 +93,58 @@ export function Header() {
                 </span>
               )}
             </Link>
+
+            {/* User Menu / Login Button */}
+            {user ? (
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="p-2 hover:bg-muted rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center flex-shrink-0">
+                    <User className="w-4 h-4 text-primary-foreground" />
+                  </div>
+                  <span className="hidden sm:inline text-sm font-medium text-foreground truncate max-w-[100px]">
+                    {user.name}
+                  </span>
+                </button>
+
+                {/* User Menu Dropdown */}
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-lg shadow-lg overflow-hidden z-40">
+                    <div className="p-3 border-b border-border">
+                      <p className="text-sm font-semibold text-foreground">
+                        {user.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleProfileClick}
+                      className="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-2"
+                    >
+                      <User className="w-4 h-4" />
+                      My Profile
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2.5 text-sm text-destructive hover:bg-muted transition-colors flex items-center gap-2 border-t border-border"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="hidden sm:block px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:bg-primary/90 transition-colors"
+              >
+                Login
+              </button>
+            )}
 
             {/* Mobile Menu Button */}
             <button
@@ -88,9 +173,27 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
+            {!user && (
+              <button
+                onClick={() => {
+                  setShowAuthModal(true);
+                  setIsOpen(false);
+                }}
+                className="mx-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:bg-primary/90 transition-colors"
+              >
+                Login / Register
+              </button>
+            )}
           </nav>
         )}
       </div>
+
+      {/* Auth Modal */}
+      <CheckoutModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => setShowAuthModal(false)}
+      />
     </header>
   );
 }

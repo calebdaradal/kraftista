@@ -5,7 +5,13 @@ export interface CustomerUser {
   email: string;
   name: string;
   phone?: string;
-  address?: string;
+  address?: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
 }
 
 interface UserContextType {
