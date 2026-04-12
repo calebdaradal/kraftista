@@ -3,23 +3,37 @@ import { useCart } from "@/context/CartContext";
 import { useUser } from "@/context/UserContext";
 import { useState } from "react";
 import { CheckoutModal } from "@/components/CheckoutModal";
-import { Check, Package, Truck, Lock } from "lucide-react";
+import { Check, Package, Truck, Lock, AlertCircle, Link as LinkIcon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Checkout() {
   const { items, totalPrice, clearCart } = useCart();
   const { user } = useUser();
+  const navigate = useNavigate();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [orderNote, setOrderNote] = useState("");
 
   const subtotal = totalPrice;
   const tax = subtotal * 0.08;
   const shipping = subtotal > 50 ? 0 : 10;
   const total = subtotal + tax + shipping;
 
+  // Check if user has address
+  const hasAddress = user?.address &&
+    user.address.street &&
+    user.address.city &&
+    user.address.state &&
+    user.address.zipCode &&
+    user.address.country;
+
   const handleCheckout = () => {
     if (!user) {
       setShowAuthModal(true);
       return;
+    }
+    if (!hasAddress) {
+      return; // Show warning in UI, prevent checkout
     }
     completeCheckout();
   };
@@ -120,19 +134,52 @@ export default function Checkout() {
                         {user.email}
                       </p>
                     </div>
-                    {user.address ? (
+                    {user.phone && (
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">
+                          Phone
+                        </p>
+                        <p className="font-semibold text-foreground">
+                          {user.phone}
+                        </p>
+                      </div>
+                    )}
+                    {hasAddress ? (
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">
                           Address
                         </p>
                         <p className="font-semibold text-foreground">
-                          {user.address}
+                          {user.address.street}
+                        </p>
+                        <p className="text-sm text-foreground">
+                          {user.address.city}, {user.address.state} {user.address.zipCode}
+                        </p>
+                        <p className="text-sm text-foreground">
+                          {user.address.country}
                         </p>
                       </div>
                     ) : (
-                      <p className="text-sm text-primary">
-                        Add shipping address in your profile
-                      </p>
+                      <div className="p-4 bg-destructive/10 border border-destructive rounded-lg space-y-2">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-semibold text-destructive">
+                              Shipping address required
+                            </p>
+                            <p className="text-sm text-destructive/80">
+                              Please add a complete shipping address in your profile to continue.
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => navigate("/profile")}
+                          className="flex items-center gap-2 text-sm font-semibold text-destructive hover:text-destructive/80 transition-colors"
+                        >
+                          <LinkIcon className="w-4 h-4" />
+                          Go to Profile
+                        </button>
+                      </div>
                     )}
                   </div>
                 ) : (
@@ -218,6 +265,28 @@ export default function Checkout() {
                   </label>
                 </div>
               </div>
+
+              {/* Order Notes */}
+              <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+                <div>
+                  <h2 className="font-semibold text-foreground text-lg mb-2">
+                    Order Notes
+                  </h2>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Add any special instructions for your order (optional)
+                  </p>
+                </div>
+                <textarea
+                  value={orderNote}
+                  onChange={(e) => setOrderNote(e.target.value)}
+                  placeholder="E.g., Please leave at the door if no one is home, or any special handling instructions..."
+                  className="w-full px-4 py-3 border border-border rounded-lg bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {orderNote.length}/500 characters
+                </p>
+              </div>
             </div>
 
             {/* Order Summary */}
@@ -257,14 +326,20 @@ export default function Checkout() {
 
                 <button
                   onClick={handleCheckout}
-                  className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+                  disabled={user && !hasAddress}
+                  className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {user ? "Place Order" : "Sign In to Continue"}
+                  {!user ? "Sign In to Continue" : hasAddress ? "Place Order" : "Complete Address in Profile"}
                 </button>
 
                 {!user && (
                   <p className="text-xs text-muted-foreground text-center">
                     You'll be prompted to sign in or create an account
+                  </p>
+                )}
+                {user && !hasAddress && (
+                  <p className="text-xs text-destructive text-center">
+                    Please complete your shipping address in your profile to continue
                   </p>
                 )}
               </div>
