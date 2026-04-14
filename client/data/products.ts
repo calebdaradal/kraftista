@@ -124,6 +124,22 @@ export function firstMissingVariationName(
   return variationTierNamesRequiringSelection(product).find((name) => !selected[name]);
 }
 
+/** Ordered, de-duplicated slides for the product page gallery: hero image, extra gallery shots, then primary-design thumbnails. */
+export function getProductGallerySlides(product: Product): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const push = (raw?: string) => {
+    const s = raw?.trim();
+    if (!s || seen.has(s)) return;
+    seen.add(s);
+    out.push(s);
+  };
+  push(product.image);
+  for (const g of product.gallery ?? []) push(g);
+  for (const o of product.primaryVariation?.options ?? []) push(o.image);
+  return out;
+}
+
 /** Named tiers with no options until the seller adds designs, colors, or add-ons */
 export function cloneEmptyTierVariations(): Pick<
   Product,
@@ -153,6 +169,7 @@ export const products: Product[] = [
     price: 89.99,
     originalPrice: 120.0,
     image: "🏺",
+    gallery: ["✨", "💧"],
     category: "Ceramics",
     tags: ["handmade", "ceramic", "vase", "home-decor", "artisan"],
     rating: 4.8,
@@ -231,6 +248,7 @@ export const products: Product[] = [
       "Handcrafted from sustainably harvested wood, this artisan bowl combines functionality with natural beauty. The wood grain pattern is unique to each piece, making it a one-of-a-kind addition to your kitchen. Perfect for serving salads, fruits, or other dishes, this bowl is both durable and elegant. The smooth finish is achieved through careful hand-sanding and natural oil treatment.",
     price: 54.99,
     image: "🪵",
+    gallery: ["🌲", "🍂"],
     category: "Woodcraft",
     tags: ["wood", "bowl", "kitchen", "sustainable", "artisan"],
     rating: 4.9,
@@ -254,6 +272,7 @@ export const products: Product[] = [
     price: 39.99,
     originalPrice: 55.0,
     image: "🎨",
+    gallery: ["🧵", "🖼️"],
     category: "Textiles",
     tags: ["textile", "hand-dyed", "wall-art", "home-decor", "natural-dye"],
     rating: 4.7,
@@ -327,6 +346,7 @@ export const products: Product[] = [
       "This premium leather shoulder bag is handcrafted by experienced leather artisans using full-grain leather. The bag features traditional stitching techniques and is designed to improve with age, developing a beautiful patina over time. With multiple compartments and a comfortable shoulder strap, it's perfect for daily use while making a stylish statement. Each bag is individually crafted and signed by its maker.",
     price: 199.99,
     image: "👜",
+    gallery: ["💼", "🌟"],
     category: "Leather",
     tags: ["leather", "bag", "shoulder-bag", "handmade", "accessory"],
     rating: 4.9,
@@ -349,6 +369,7 @@ export const products: Product[] = [
       "Each piece of this handmade copper jewelry is individually crafted with semi-precious gemstones. The copper is hand-forged and finished to create unique patterns and textures. Perfect as a gift or personal statement piece, these jewelry items combine traditional metalworking with modern design sensibilities. The gemstones are carefully selected for their quality and beauty.",
     price: 74.99,
     image: "💎",
+    gallery: ["✨", "🔮"],
     category: "Jewelry",
     tags: ["jewelry", "copper", "gemstone", "handmade", "wearable-art"],
     rating: 4.6,
@@ -371,6 +392,7 @@ export const products: Product[] = [
       "This luxurious set of handcrafted soaps is made with organic oils and natural ingredients. Each bar is cold-processed to preserve the beneficial properties of the ingredients. The collection includes four different scents, each blended with essential oils and complementary botanical ingredients. Perfect for personal use or as a thoughtful gift for soap enthusiasts.",
     price: 34.99,
     image: "🧼",
+    gallery: ["🫧", "🌿"],
     category: "Personal Care",
     tags: ["soap", "organic", "natural", "handmade", "self-care"],
     rating: 4.8,
@@ -393,6 +415,7 @@ export const products: Product[] = [
       "This beautiful hand-shaped terracotta pot is perfect for showcasing your favorite plants or succulents. Crafted from natural terracotta clay, each pot is individually shaped and fired. The porous nature of terracotta provides excellent drainage and airflow for healthy plant growth. These pots develop a beautiful weathered patina over time, adding character and charm to any space.",
     price: 44.99,
     image: "🪴",
+    gallery: ["🌱", "☀️"],
     category: "Gardening",
     tags: ["pot", "terracotta", "plant", "handmade", "garden"],
     rating: 4.7,
@@ -415,6 +438,7 @@ export const products: Product[] = [
       "This comprehensive bamboo kitchen set includes essential utensils for all your cooking needs. Crafted from sustainable bamboo, these tools are lightweight, durable, and eco-friendly. The natural wood grain and finish make them beautiful enough to display on your counter. Perfect for both traditional and non-stick cookware, these utensils won't scratch your pans.",
     price: 59.99,
     image: "🥢",
+    gallery: ["🍳", "♻️"],
     category: "Kitchen",
     tags: ["kitchen", "bamboo", "utensils", "eco-friendly", "cookware"],
     rating: 4.8,

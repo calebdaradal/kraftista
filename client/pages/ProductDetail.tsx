@@ -3,14 +3,75 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   getProductById,
   getRelatedProducts,
+  getProductGallerySlides,
   computeVariantLinePrice,
   resolveLineImageForCart,
   isVariationSelectionComplete,
   firstMissingVariationName,
 } from "@/data/products";
-import { Heart, ShoppingCart, Star, Check, X, Truck, AlertCircle } from "lucide-react";
-import { useState } from "react";
+import {
+  Heart,
+  ShoppingCart,
+  Star,
+  Check,
+  X,
+  Truck,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
+import { cn } from "@/lib/utils";
+
+function ProductSlideContent({ src, variant }: { src: string; variant: "main" | "thumb" }) {
+  const t = src.trim();
+  if (t.startsWith("data:")) {
+    return (
+      <img
+        src={t}
+        alt=""
+        className={
+          variant === "main"
+            ? "max-h-[85%] max-w-[85%] rounded-lg object-contain shadow-md"
+            : "h-full w-full object-cover"
+        }
+      />
+    );
+  }
+  if (variant === "main") {
+    return (
+      <div
+        className="flex max-h-[85%] max-w-[85%] select-none items-center justify-center text-8xl md:text-9xl leading-none"
+        aria-hidden
+      >
+        {t}
+      </div>
+    );
+  }
+  return (
+    <div
+      className="flex h-full w-full select-none items-center justify-center text-2xl leading-none"
+      aria-hidden
+    >
+      {t}
+    </div>
+  );
+}
+
+/** Clicking the active option again clears that tier (back to default pricing / hero preview). */
+function toggleTierSelection(
+  prev: Record<string, string>,
+  collectionName: string,
+  optionLabel: string
+): Record<string, string> {
+  if (prev[collectionName] === optionLabel) {
+    const next = { ...prev };
+    delete next[collectionName];
+    return next;
+  }
+  return { ...prev, [collectionName]: optionLabel };
+}
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -24,9 +85,39 @@ export default function ProductDetail() {
   const [activeTab, setActiveTab] = useState<"details" | "care" | "reviews">(
     "details"
   );
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   const product = id ? getProductById(id) : undefined;
-  const relatedProducts = product ? getRelatedProducts(id) : [];
+  const slides = useMemo(
+    () => (product ? getProductGallerySlides(product) : []),
+    [product]
+  );
+  const thumbRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  useEffect(() => {
+    setGalleryIndex(0);
+  }, [product?.id]);
+
+  useEffect(() => {
+    if (!product) return;
+    const pv = product.primaryVariation;
+    if (!pv?.options?.length) return;
+    const label = selectedVariations[pv.collectionName];
+    if (!label) return;
+    const opt = pv.options.find((o) => o.label === label);
+    const img = opt?.image?.trim();
+    if (!img) return;
+    const idx = slides.indexOf(img);
+    if (idx >= 0) setGalleryIndex(idx);
+  }, [selectedVariations, product, slides]);
+
+  useEffect(() => {
+    const el = thumbRefs.current[galleryIndex];
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [galleryIndex]);
+
+  const relatedProducts = id ? getRelatedProducts(id) : [];
 
   if (!product) {
     return (
@@ -92,6 +183,16 @@ export default function ProductDetail() {
   const linePrice = computeVariantLinePrice(product, selectedVariations);
   const missingVariationName = firstMissingVariationName(product, selectedVariations);
 
+  const activeSlideSrc = slides[galleryIndex] ?? product.image;
+  const goPrevImage = () => {
+    if (slides.length <= 1) return;
+    setGalleryIndex((i) => (i - 1 + slides.length) % slides.length);
+  };
+  const goNextImage = () => {
+    if (slides.length <= 1) return;
+    setGalleryIndex((i) => (i + 1) % slides.length);
+  };
+
   const handleAddToCart = () => {
     if (!canAddToCart) return;
 
@@ -115,32 +216,62 @@ export default function ProductDetail() {
       {/* Product Section */}
       <section className="py-12 md:py-16">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mb-12">
-            {/* Product Image */}
-            <div className="flex items-center justify-center">
+          <div className="grid grid-cols-1 items-start md:grid-cols-2 gap-8 md:gap-12 mb-12">
+            {/* Product gallery — main image + thumbnail strip with arrows */}
+            <div className="flex w-full max-w-xl flex-col gap-3 md:sticky md:top-24 md:z-10 md:self-start">
               <div className="relative flex aspect-square w-full items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-secondary/10">
-                {(() => {
-                  const pv = product.primaryVariation;
-                  const pl = pv ? selectedVariations[pv.collectionName] : undefined;
-                  const opt = pv?.options.find((o) => o.label === pl);
-                  const src = opt?.image;
-                  if (src && src.startsWith("data:")) {
-                    return (
-                      <img
-                        src={src}
-                        alt=""
-                        className="max-h-[85%] max-w-[85%] rounded-lg object-contain shadow-md"
-                      />
-                    );
-                  }
-                  return <div className="text-9xl">{product.image}</div>;
-                })()}
+                <ProductSlideContent src={activeSlideSrc} variant="main" />
                 {product.originalPrice && (
                   <div className="absolute top-4 right-4 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-bold">
                     -{discount}%
                   </div>
                 )}
               </div>
+
+              {slides.length > 1 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={goPrevImage}
+                    aria-label="Previous image"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-foreground shadow-sm transition-colors hover:bg-muted"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex gap-2 overflow-x-auto scroll-smooth py-0.5 [scrollbar-width:thin]">
+                      {slides.map((src, i) => (
+                        <button
+                          key={`${product.id}-slide-${i}`}
+                          type="button"
+                          ref={(el) => {
+                            thumbRefs.current[i] = el;
+                          }}
+                          onClick={() => setGalleryIndex(i)}
+                          className={cn(
+                            "relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-muted/40 transition-colors",
+                            i === galleryIndex
+                              ? "border-primary ring-2 ring-primary/25"
+                              : "border-border hover:border-primary/50"
+                          )}
+                          aria-label={`View image ${i + 1} of ${slides.length}`}
+                          aria-current={i === galleryIndex ? "true" : undefined}
+                        >
+                          <ProductSlideContent src={src} variant="thumb" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={goNextImage}
+                    aria-label="Next image"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-foreground shadow-sm transition-colors hover:bg-muted"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Product Info */}
@@ -246,17 +377,18 @@ export default function ProductDetail() {
                           {product.primaryVariation.options.map((option) => {
                             const name = product.primaryVariation!.collectionName;
                             const selected = selectedVariations[name] === option.label;
-                            const hasImage = option.image && option.image.startsWith("data:");
+                            const raw = option.image?.trim();
+                            const hasUploadedImage = Boolean(raw?.startsWith("data:"));
+                            const hasVisual = Boolean(raw);
 
-                            return hasImage ? (
+                            return hasVisual ? (
                               <button
                                 key={option.id}
                                 type="button"
                                 onClick={() =>
-                                  setSelectedVariations({
-                                    ...selectedVariations,
-                                    [name]: option.label,
-                                  })
+                                  setSelectedVariations((prev) =>
+                                    toggleTierSelection(prev, name, option.label)
+                                  )
                                 }
                                 className={`flex flex-col items-center gap-1 transition-colors ${
                                   selected ? "opacity-100" : "opacity-75 hover:opacity-100"
@@ -267,11 +399,17 @@ export default function ProductDetail() {
                                     ? "border-primary ring-2 ring-primary/30"
                                     : "border-border hover:border-primary/50"
                                 }`}>
-                                  <img
-                                    src={option.image}
-                                    alt={option.label}
-                                    className="w-full h-full object-cover"
-                                  />
+                                  {hasUploadedImage ? (
+                                    <img
+                                      src={option.image}
+                                      alt={option.label}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <span className="text-2xl leading-none" aria-hidden>
+                                      {raw}
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="text-center">
                                   <p className="text-xs font-semibold text-foreground">{option.label}</p>
@@ -283,10 +421,9 @@ export default function ProductDetail() {
                                 key={option.id}
                                 type="button"
                                 onClick={() =>
-                                  setSelectedVariations({
-                                    ...selectedVariations,
-                                    [name]: option.label,
-                                  })
+                                  setSelectedVariations((prev) =>
+                                    toggleTierSelection(prev, name, option.label)
+                                  )
                                 }
                                 className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${
                                   selected
@@ -321,10 +458,9 @@ export default function ProductDetail() {
                                 key={option.id}
                                 type="button"
                                 onClick={() =>
-                                  setSelectedVariations({
-                                    ...selectedVariations,
-                                    [name]: option.label,
-                                  })
+                                  setSelectedVariations((prev) =>
+                                    toggleTierSelection(prev, name, option.label)
+                                  )
                                 }
                                 className={`flex items-center gap-2 rounded-full border-2 py-2 pl-2 pr-4 text-sm font-medium transition-colors ${
                                   selected
@@ -363,10 +499,9 @@ export default function ProductDetail() {
                                 key={option.id}
                                 type="button"
                                 onClick={() =>
-                                  setSelectedVariations({
-                                    ...selectedVariations,
-                                    [name]: option.label,
-                                  })
+                                  setSelectedVariations((prev) =>
+                                    toggleTierSelection(prev, name, option.label)
+                                  )
                                 }
                                 className={`rounded-lg border-2 px-4 py-2.5 text-sm font-medium transition-colors ${
                                   selected
