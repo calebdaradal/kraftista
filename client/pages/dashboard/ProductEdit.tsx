@@ -48,7 +48,7 @@ function mergeProductWithTiers(p: Product | null): Product {
 export default function ProductEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const isNew = id === "new";
+  const isNew = !id || id === "new";
   const [product, setProduct] = useState<Product | null>(null);
 
   const [formData, setFormData] = useState<Product>(() =>
@@ -147,6 +147,8 @@ export default function ProductEdit() {
         await api.products.create(formData, token);
       } else if (id) {
         await api.products.update(id, formData, token);
+      } else {
+        throw new Error("Missing product id for update.");
       }
       navigate("/dashboard/products");
     } catch (err) {
