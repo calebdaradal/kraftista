@@ -18,6 +18,7 @@ const categories = [
 ];
 
 export default function Shop() {
+  const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [storefrontProducts, setStorefrontProducts] = useState<Product[]>([]);
 
@@ -76,9 +77,17 @@ export default function Shop() {
               >
                 {/* Product Image */}
                 <div className="relative h-64 bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center overflow-hidden group-hover:bg-primary/20 transition-colors">
-                  <div className="text-6xl transform group-hover:scale-110 transition-transform duration-300">
-                    {product.image}
-                  </div>
+                  {isImageSource(product.image) ? (
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="text-6xl transform group-hover:scale-110 transition-transform duration-300">
+                      {product.image}
+                    </div>
+                  )}
 
                   {product.originalPrice && (
                     <div className="absolute top-3 right-3 bg-destructive text-destructive-foreground px-2 py-1 rounded text-xs font-bold">

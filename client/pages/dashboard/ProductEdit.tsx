@@ -56,6 +56,7 @@ export default function ProductEdit() {
   );
 
   const [newTag, setNewTag] = useState("");
+  const [newMaterial, setNewMaterial] = useState("");
   const [newCare, setNewCare] = useState("");
   const [images, setImages] = useState<string[]>([]);
   useEffect(() => {
@@ -65,7 +66,9 @@ export default function ProductEdit() {
       .then((p) => {
         setProduct(p);
         setFormData(mergeProductWithTiers(p));
-        setImages(p.gallery || []);
+        const mergedImages = [p.image, ...(p.gallery || [])].filter(Boolean);
+        const deduped = Array.from(new Set(mergedImages));
+        setImages(deduped);
       })
       .catch(() => navigate("/dashboard/products"));
   }, [id, isNew, navigate]);
@@ -108,6 +111,23 @@ export default function ProductEdit() {
     });
   };
 
+  const handleAddMaterial = () => {
+    if (newMaterial.trim()) {
+      setFormData({
+        ...formData,
+        material: [...(formData.material || []), newMaterial.trim()],
+      });
+      setNewMaterial("");
+    }
+  };
+
+  const handleRemoveMaterial = (index: number) => {
+    setFormData({
+      ...formData,
+      material: (formData.material || []).filter((_, i) => i !== index),
+    });
+  };
+
   const handleAddCare = () => {
     if (newCare.trim()) {
       setFormData({
@@ -128,10 +148,11 @@ export default function ProductEdit() {
   const handleImagesChange = (newImages: string[], newThumbnailIndex: number) => {
     setImages(newImages);
     setThumbnailIndex(newThumbnailIndex);
-    // Update gallery in formData
+    const [primaryImage, ...galleryImages] = newImages;
     setFormData({
       ...formData,
-      gallery: newImages,
+      image: primaryImage || formData.image,
+      gallery: galleryImages,
     });
   };
 
@@ -554,6 +575,47 @@ export default function ProductEdit() {
             {/* Care Instructions */}
             <div>
               <label className="block text-sm font-semibold text-foreground mb-2">
+                Materials
+              </label>
+              <div className="mb-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-stretch">
+                <input
+                  type="text"
+                  value={newMaterial}
+                  onChange={(e) => setNewMaterial(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddMaterial())}
+                  placeholder="Add material..."
+                  className="min-h-[2.75rem] min-w-0 flex-1 rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddMaterial}
+                  className="shrink-0 whitespace-nowrap rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground hover:bg-primary/90 sm:min-w-[5rem]"
+                >
+                  Add
+                </button>
+              </div>
+              <ul className="space-y-2">
+                {(formData.material || []).map((material, i) => (
+                  <li
+                    key={i}
+                    className="flex items-center justify-between p-2 bg-muted rounded-lg"
+                  >
+                    <span className="text-sm text-foreground">{material}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveMaterial(i)}
+                      className="text-destructive hover:text-destructive/80"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Care Instructions */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">
                 Care Instructions
               </label>
               <div className="mb-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-stretch">
@@ -561,7 +623,7 @@ export default function ProductEdit() {
                   type="text"
                   value={newCare}
                   onChange={(e) => setNewCare(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleAddCare()}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddCare())}
                   placeholder="Add care instruction..."
                   className="min-h-[2.75rem] min-w-0 flex-1 rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />

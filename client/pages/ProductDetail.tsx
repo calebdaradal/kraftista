@@ -26,7 +26,7 @@ import type { Product } from "@/types/product";
 
 function ProductSlideContent({ src, variant }: { src: string; variant: "main" | "thumb" }) {
   const t = src.trim();
-  if (t.startsWith("data:")) {
+  if (t.startsWith("data:") || t.startsWith("http://") || t.startsWith("https://")) {
     return (
       <img
         src={t}
@@ -59,6 +59,8 @@ function ProductSlideContent({ src, variant }: { src: string; variant: "main" | 
   );
 }
 
+const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
+
 /** Clicking the active option again clears that tier (back to default pricing / hero preview). */
 function toggleTierSelection(
   prev: Record<string, string>,
@@ -86,7 +88,9 @@ export default function ProductDetail() {
     "details"
   );
   const [galleryIndex, setGalleryIndex] = useState(0);
-  const [product, setProduct] = useState<Product | undefined>(undefined);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isNotFound, setIsNotFound] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
 
   const slides = useMemo(
@@ -120,20 +124,45 @@ export default function ProductDetail() {
 
   useEffect(() => {
     if (!id) return;
+    setIsLoading(true);
+    setIsNotFound(false);
+    setProduct(null);
     api.products
       .getById(id)
       .then((fetched) => {
         setProduct(fetched);
         return api.products.list({ active: true, category: fetched.category });
       })
-      .then((list) => setRelatedProducts(list.filter((item) => item.id !== id).slice(0, 4)))
+      .then((list) => {
+        setRelatedProducts(list.filter((item) => item.id !== id).slice(0, 4));
+        setIsLoading(false);
+      })
       .catch(() => {
-        setProduct(undefined);
+        setProduct(null);
+        setIsNotFound(true);
         setRelatedProducts([]);
+        setIsLoading(false);
       });
   }, [id]);
 
-  if (!product) {
+  if (isLoading) {
+    return (
+      <Layout>
+        <section className="py-20 text-center">
+          <div className="container mx-auto px-4">
+            <h1 className="text-3xl font-bold text-foreground mb-4">
+              Loading Product...
+            </h1>
+            <p className="text-muted-foreground mb-8">
+              Fetching latest product details.
+            </p>
+          </div>
+        </section>
+      </Layout>
+    );
+  }
+
+  if (isNotFound || !product) {
     return (
       <Layout>
         <section className="py-20 text-center">
@@ -824,9 +853,17 @@ export default function ProductDetail() {
                     className="group bg-card rounded-xl overflow-hidden border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg"
                   >
                     <div className="relative h-64 bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center overflow-hidden group-hover:bg-primary/20 transition-colors">
-                      <div className="text-6xl transform group-hover:scale-110 transition-transform duration-300">
-                        {relatedProduct.image}
-                      </div>
+                      {isImageSource(relatedProduct.image) ? (
+                        <img
+                          src={relatedProduct.image}
+                          alt={relatedProduct.name}
+                          className="h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="text-6xl transform group-hover:scale-110 transition-transform duration-300">
+                          {relatedProduct.image}
+                        </div>
+                      )}
                     </div>
                     <div className="p-4">
                       <h3 className="font-semibold text-foreground text-sm line-clamp-2 group-hover:text-primary transition-colors">

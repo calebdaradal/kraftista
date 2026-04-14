@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import type { Product } from "@/types/product";
 
 export default function Products() {
+  const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [sortBy, setSortBy] = useState<"name" | "price" | "stock">("name");
@@ -162,9 +163,13 @@ export default function Products() {
                   className="rounded-xl border border-border bg-card p-4"
                 >
                   <div className="flex gap-3">
-                    <span className="shrink-0 text-3xl" aria-hidden>
-                      {product.image}
-                    </span>
+                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-muted flex items-center justify-center">
+                      {isImageSource(product.image) ? (
+                        <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-3xl" aria-hidden>{product.image}</span>
+                      )}
+                    </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="truncate font-semibold text-foreground">{product.name}</p>
@@ -260,7 +265,13 @@ export default function Products() {
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <span className="text-3xl">{product.image}</span>
+                        <div className="h-12 w-12 overflow-hidden rounded-lg bg-muted flex items-center justify-center">
+                          {isImageSource(product.image) ? (
+                            <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="text-3xl">{product.image}</span>
+                          )}
+                        </div>
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="font-semibold text-foreground">{product.name}</p>

@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import type { Product } from "@/types/product";
 
 export default function Settings() {
+  const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
   const { settings: globalSettings, updateSettings } = useSettings();
   const [settings, setSettings] = useState(globalSettings);
   const [products, setProducts] = useState<Product[]>([]);
@@ -220,7 +221,13 @@ export default function Settings() {
                           }
                           className="w-4 h-4 rounded border-border bg-input disabled:opacity-50 disabled:cursor-not-allowed"
                         />
-                        <span className="text-2xl">{product.image}</span>
+                        <div className="h-10 w-10 overflow-hidden rounded-lg bg-muted flex items-center justify-center">
+                          {isImageSource(product.image) ? (
+                            <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="text-2xl">{product.image}</span>
+                          )}
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="font-medium text-foreground text-sm">

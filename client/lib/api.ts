@@ -60,7 +60,7 @@ const normalizeProduct = (raw: any): Product => ({
   fullDescription: raw.full_description ?? "",
   price: Number(raw.price),
   originalPrice: raw.original_price != null ? Number(raw.original_price) : undefined,
-  image: raw.image_url || "🛍️",
+  image: raw.image_url || raw.gallery_urls?.[0] || "🛍️",
   gallery: raw.gallery_urls ?? [],
   category: raw.category ?? "Uncategorized",
   tags: raw.tags ?? [],
@@ -126,6 +126,7 @@ export const api = {
       return normalizeProduct(await request<any>(`/products/${id}`));
     },
     async create(payload: Product, token: string) {
+      const imageSource = payload.image || payload.gallery?.[0] || "🛍️";
       return normalizeProduct(
         await request<any>(
           "/products",
@@ -142,7 +143,7 @@ export const api = {
               original_price: payload.originalPrice,
               in_stock: payload.inStock,
               stock_count: payload.stockCount,
-              image_url: payload.image,
+              image_url: imageSource,
               gallery_urls: payload.gallery ?? [],
               tags: payload.tags ?? [],
               rating: payload.rating ?? 0,
@@ -158,6 +159,7 @@ export const api = {
       );
     },
     async update(id: string, payload: Product, token: string) {
+      const imageSource = payload.image || payload.gallery?.[0] || "🛍️";
       return normalizeProduct(
         await request<any>(
           `/products/${id}`,
@@ -174,7 +176,7 @@ export const api = {
               original_price: payload.originalPrice,
               in_stock: payload.inStock,
               stock_count: payload.stockCount,
-              image_url: payload.image,
+              image_url: imageSource,
               gallery_urls: payload.gallery ?? [],
               tags: payload.tags ?? [],
               dimensions: payload.dimensions,

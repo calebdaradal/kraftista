@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import type { Product } from "@/types/product";
 
 export default function Dashboard() {
+  const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
   const [products, setProducts] = useState<Product[]>([]);
   useEffect(() => {
     api.products.list().then(setProducts).catch(() => setProducts([]));
@@ -106,9 +107,13 @@ export default function Dashboard() {
                 key={product.id}
                 className="flex gap-3 rounded-lg border border-border bg-muted/30 p-3"
               >
-                <span className="shrink-0 text-2xl" aria-hidden>
-                  {product.image}
-                </span>
+                <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-muted flex items-center justify-center">
+                  {isImageSource(product.image) ? (
+                    <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-2xl" aria-hidden>{product.image}</span>
+                  )}
+                </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-sm text-foreground">
                     {product.name}
@@ -167,7 +172,13 @@ export default function Dashboard() {
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl">{product.image}</span>
+                        <div className="h-10 w-10 overflow-hidden rounded-lg bg-muted flex items-center justify-center">
+                          {isImageSource(product.image) ? (
+                            <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="text-2xl">{product.image}</span>
+                          )}
+                        </div>
                         <div>
                           <p className="font-medium text-foreground text-sm">
                             {product.name}

@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import type { Product } from "@/types/product";
 
 export function FeaturedProducts() {
+  const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
   const { settings } = useSettings();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
 
@@ -42,9 +43,17 @@ export function FeaturedProducts() {
             >
               {/* Product Image */}
               <div className="relative h-64 bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center overflow-hidden group-hover:bg-primary/20 transition-colors">
-                <div className="text-6xl transform group-hover:scale-110 transition-transform duration-300">
-                  {product.image}
-                </div>
+                {isImageSource(product.image) ? (
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="text-6xl transform group-hover:scale-110 transition-transform duration-300">
+                    {product.image}
+                  </div>
+                )}
 
                 {product.originalPrice && (
                   <div className="absolute top-3 right-3 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-xs font-bold">
