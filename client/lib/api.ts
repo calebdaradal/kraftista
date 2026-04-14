@@ -79,6 +79,14 @@ const normalizeProduct = (raw: any): Product => ({
   tertiaryVariation: undefined,
 });
 
+const getImageSourceForPayload = (payload: Product): string | null => {
+  const source = payload.image || payload.gallery?.[0] || null;
+  if (!source) return null;
+  // DB column image_url is short text for URL-like value; keep long data URLs in gallery JSON instead.
+  if (source.length > 500) return null;
+  return source;
+};
+
 const toFrontendUser = (raw: ApiUser): FrontendUser => ({
   id: raw.id,
   email: raw.email,
@@ -126,7 +134,7 @@ export const api = {
       return normalizeProduct(await request<any>(`/products/${id}`));
     },
     async create(payload: Product, token: string) {
-      const imageSource = payload.image || payload.gallery?.[0] || "🛍️";
+      const imageSource = getImageSourceForPayload(payload);
       return normalizeProduct(
         await request<any>(
           "/products",
@@ -159,7 +167,7 @@ export const api = {
       );
     },
     async update(id: string, payload: Product, token: string) {
-      const imageSource = payload.image || payload.gallery?.[0] || "🛍️";
+      const imageSource = getImageSourceForPayload(payload);
       return normalizeProduct(
         await request<any>(
           `/products/${id}`,
@@ -190,7 +198,7 @@ export const api = {
       );
     },
     async remove(id: string, token: string) {
-      return normalizeProduct(await request<any>(`/products/${id}`, { method: "DELETE" }, token));
+      await request<void>(`/products/${id}`, { method: "DELETE" }, token);
     },
   },
   auth: {

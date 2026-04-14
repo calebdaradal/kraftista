@@ -151,8 +151,8 @@ export default function ProductEdit() {
     const [primaryImage, ...galleryImages] = newImages;
     setFormData({
       ...formData,
-      image: primaryImage || formData.image,
-      gallery: galleryImages,
+      image: primaryImage || "",
+      gallery: newImages.length ? newImages : galleryImages,
     });
   };
 
