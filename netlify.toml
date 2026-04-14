@@ -15,5 +15,6 @@ to = "/.netlify/functions/api/:splat"
 
 [[redirects]]
 from = "/*"
-to = "/index.html"
+to = "https://kraftistabackend-1.onrender.com/api/:splat"
 status = 200
+force = true

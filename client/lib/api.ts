@@ -1,6 +1,8 @@
 import type { Product } from "@/types/product";
 
-const API_BASE = (import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api").replace(/\/$/, "");
+const defaultApiBase =
+  typeof window !== "undefined" ? `${window.location.origin}/api` : "http://127.0.0.1:8000/api";
+const API_BASE = (import.meta.env.VITE_API_URL || defaultApiBase).replace(/\/$/, "");
 
 type UserRole = "customer" | "admin" | "editor";
 
