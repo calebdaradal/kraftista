@@ -1,13 +1,19 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { products } from "@/data/products";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, Plus, Trash2, Edit, ChevronDown } from "lucide-react";
+import { api } from "@/lib/api";
+import type { Product } from "@/types/product";
 
 export default function Products() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [sortBy, setSortBy] = useState<"name" | "price" | "stock">("name");
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    api.products.list().then(setProducts).catch(() => setProducts([]));
+  }, []);
 
   const categories = [
     "All",
@@ -38,8 +44,15 @@ export default function Products() {
 
   const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this product?")) {
-      // In a real app, make API call to delete
-      alert(`Product ${id} deleted (simulated)`);
+      const token = localStorage.getItem("craft_auth_token");
+      if (!token) {
+        alert("Please login again.");
+        return;
+      }
+      api.products
+        .remove(id, token)
+        .then(() => setProducts((prev) => prev.filter((p) => p.id !== id)))
+        .catch((err) => alert(err.message || "Failed to delete product"));
     }
   };
 

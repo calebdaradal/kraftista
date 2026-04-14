@@ -1,8 +1,9 @@
 import { Layout } from "@/components/layout/Layout";
 import { ShoppingCart, Heart, Star } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getStorefrontProducts } from "@/data/products";
+import { api } from "@/lib/api";
+import type { Product } from "@/types/product";
 
 const categories = [
   "All",
@@ -18,8 +19,11 @@ const categories = [
 
 export default function Shop() {
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [storefrontProducts, setStorefrontProducts] = useState<Product[]>([]);
 
-  const storefrontProducts = getStorefrontProducts();
+  useEffect(() => {
+    api.products.list({ active: true }).then(setStorefrontProducts).catch(() => setStorefrontProducts([]));
+  }, []);
 
   const filteredProducts =
     selectedCategory === "All"

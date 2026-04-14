@@ -5,6 +5,7 @@ import { useState } from "react";
 import { CheckoutModal } from "@/components/CheckoutModal";
 import { Check, Package, Truck, Lock, AlertCircle, Link as LinkIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { api } from "@/lib/api";
 
 export default function Checkout() {
   const { items, totalPrice, clearCart } = useCart();
@@ -38,12 +39,32 @@ export default function Checkout() {
     completeCheckout();
   };
 
-  const completeCheckout = () => {
-    setOrderPlaced(true);
-    clearCart();
-    setTimeout(() => {
-      window.location.href = "/";
-    }, 3000);
+  const completeCheckout = async () => {
+    const token = localStorage.getItem("craft_customer_token");
+    if (!token || !user?.address) return;
+    try {
+      await api.customer.checkout(
+        {
+          payment_method: "card",
+          order_note: orderNote,
+          shipping_address: {
+            street: user.address.street,
+            city: user.address.city,
+            state: user.address.state,
+            zip_code: user.address.zipCode,
+            country: user.address.country,
+          },
+        },
+        token
+      );
+      setOrderPlaced(true);
+      clearCart();
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 3000);
+    } catch {
+      // Keep UI behavior simple for now; backend validation errors can be shown later.
+    }
   };
 
   if (orderPlaced) {

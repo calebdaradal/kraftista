@@ -140,18 +140,6 @@ export default function Login() {
           </Link>
         </p>
 
-        {/* Demo Credentials */}
-        <div className="mt-8 p-4 bg-card border border-border rounded-lg">
-          <p className="text-xs font-semibold text-foreground mb-2">
-            Demo Credentials:
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Email: <code className="bg-muted px-1 rounded">demo@craft.com</code>
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Password: <code className="bg-muted px-1 rounded">password123</code>
-          </p>
-        </div>
       </div>
     </div>
   );

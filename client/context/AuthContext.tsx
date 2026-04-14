@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from "react";
+import { api } from "@/lib/api";
 
 export interface User {
   id: string;
@@ -21,7 +22,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
-    // Load user from localStorage on mount
     const stored = localStorage.getItem("craft_user");
     return stored ? JSON.parse(stored) : null;
   });
@@ -30,21 +30,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Mock authentication - replace with real API call
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      if (email && password.length >= 6) {
-        const mockUser: User = {
-          id: "1",
-          email,
-          name: email.split("@")[0],
-          role: "admin",
-        };
-        setUser(mockUser);
-        localStorage.setItem("craft_user", JSON.stringify(mockUser));
-      } else {
-        throw new Error("Invalid credentials");
-      }
+      const result = await api.auth.login(email, password);
+      const authUser: User = {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        role: result.user.role === "customer" ? "editor" : result.user.role,
+      };
+      setUser(authUser);
+      localStorage.setItem("craft_user", JSON.stringify(authUser));
+      localStorage.setItem("craft_auth_token", result.token);
     } finally {
       setIsLoading(false);
     }
@@ -53,21 +48,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (name: string, email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Mock registration - replace with real API call
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      if (email && password.length >= 6 && name) {
-        const mockUser: User = {
-          id: Math.random().toString(),
-          email,
-          name,
-          role: "editor",
-        };
-        setUser(mockUser);
-        localStorage.setItem("craft_user", JSON.stringify(mockUser));
-      } else {
-        throw new Error("Invalid registration data");
-      }
+      const result = await api.auth.register(name, email, password, "editor");
+      const authUser: User = {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        role: result.user.role === "customer" ? "editor" : result.user.role,
+      };
+      setUser(authUser);
+      localStorage.setItem("craft_user", JSON.stringify(authUser));
+      localStorage.setItem("craft_auth_token", result.token);
     } finally {
       setIsLoading(false);
     }
@@ -76,10 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const resetPassword = async (email: string) => {
     setIsLoading(true);
     try {
-      // Mock password reset - replace with real API call
-      await new Promise((resolve) => setTimeout(resolve, 800));
       if (!email) throw new Error("Email is required");
-      // In real app, send reset email
     } finally {
       setIsLoading(false);
     }
@@ -88,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem("craft_user");
+    localStorage.removeItem("craft_auth_token");
   };
 
   return (

@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { api } from "@/lib/api";
 
 export interface CartItem {
   productId: string;
@@ -40,6 +41,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("craft_cart", JSON.stringify(newItems));
   };
 
+  useEffect(() => {
+    const token = localStorage.getItem("craft_customer_token");
+    if (!token) return;
+    api.customer
+      .getCart(token)
+      .then((cart) => {
+        const mapped: CartItem[] = (cart.items ?? []).map((item: any) => ({
+          productId: item.product_id,
+          quantity: item.quantity,
+          selectedVariations: item.selected_variations ?? {},
+          price: Number(item.unit_price),
+          image: item.image_url ?? "🛍️",
+          name: item.product_name,
+        }));
+        saveCart(mapped);
+      })
+      .catch(() => {});
+  }, []);
+
   const addToCart = (newItem: CartItem) => {
     const existingItemIndex = items.findIndex(
       (item) =>
@@ -54,6 +74,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
       saveCart(updatedItems);
     } else {
       saveCart([...items, newItem]);
+    }
+    const token = localStorage.getItem("craft_customer_token");
+    if (token) {
+      api.customer
+        .upsertCartItem(
+          {
+            product_id: newItem.productId,
+            quantity: newItem.quantity,
+            selected_variations: newItem.selectedVariations,
+            unit_price: newItem.price,
+            image_url: newItem.image,
+            product_name: newItem.name,
+          },
+          token
+        )
+        .catch(() => {});
     }
   };
 
@@ -90,6 +126,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return item;
     });
     saveCart(updatedItems.filter((item) => item.quantity > 0));
+    const token = localStorage.getItem("craft_customer_token");
+    if (token) {
+      const item = items.find(
+        (i) => i.productId === productId && JSON.stringify(i.selectedVariations) === JSON.stringify(variations ?? {})
+      );
+      if (item) {
+        api.customer
+          .upsertCartItem(
+            {
+              product_id: item.productId,
+              quantity: Math.max(0, quantity),
+              selected_variations: item.selectedVariations,
+              unit_price: item.price,
+              image_url: item.image,
+              product_name: item.name,
+            },
+            token
+          )
+          .catch(() => {});
+      }
+    }
   };
 
   const clearCart = () => {

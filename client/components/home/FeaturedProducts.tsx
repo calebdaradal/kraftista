@@ -1,13 +1,23 @@
 import { Link } from "react-router-dom";
 import { ShoppingCart, Heart, Star } from "lucide-react";
-import { getProductsByIds } from "@/data/products";
+import { useEffect, useState } from "react";
 import { useSettings } from "@/context/SettingsContext";
+import { api } from "@/lib/api";
+import type { Product } from "@/types/product";
 
 export function FeaturedProducts() {
   const { settings } = useSettings();
-  const featuredProducts = getProductsByIds(settings.featuredProductIds).filter(
-    (p) => p.active
-  );
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    api.products
+      .list({ active: true })
+      .then((products) => {
+        const selected = products.filter((p) => settings.featuredProductIds.includes(p.id));
+        setFeaturedProducts(selected);
+      })
+      .catch(() => setFeaturedProducts([]));
+  }, [settings.featuredProductIds]);
 
   return (
     <section className="py-16 md:py-24">

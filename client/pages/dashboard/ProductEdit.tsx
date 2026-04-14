@@ -1,16 +1,14 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import {
-  getProductById,
-  EMPTY_TIER_VARIATIONS,
-  type Product,
-} from "@/data/products";
-import { useState } from "react";
+import { EMPTY_TIER_VARIATIONS } from "@/data/products";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Save, X } from "lucide-react";
 import { ProductImageUpload } from "@/components/ProductImageUpload";
 import { ProductVariationsForm } from "@/components/ProductVariationsForm";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { api } from "@/lib/api";
+import type { Product } from "@/types/product";
 
 function mergeProductWithTiers(p: Product | null): Product {
   const tiers = EMPTY_TIER_VARIATIONS;
@@ -51,15 +49,27 @@ export default function ProductEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isNew = id === "new";
-  const product = id && id !== "new" ? getProductById(id) : null;
+  const [product, setProduct] = useState<Product | null>(null);
 
   const [formData, setFormData] = useState<Product>(() =>
-    mergeProductWithTiers(product ?? null)
+    mergeProductWithTiers(null)
   );
 
   const [newTag, setNewTag] = useState("");
   const [newCare, setNewCare] = useState("");
-  const [images, setImages] = useState<string[]>(product?.gallery || []);
+  const [images, setImages] = useState<string[]>([]);
+  useEffect(() => {
+    if (isNew || !id) return;
+    api.products
+      .getById(id)
+      .then((p) => {
+        setProduct(p);
+        setFormData(mergeProductWithTiers(p));
+        setImages(p.gallery || []);
+      })
+      .catch(() => navigate("/dashboard/products"));
+  }, [id, isNew, navigate]);
+
   const [thumbnailIndex, setThumbnailIndex] = useState(0);
   const [saleType, setSaleType] = useState<"price" | "percentage">("price");
   const [saleValue, setSaleValue] = useState<number | "">(formData.originalPrice || "");
@@ -125,11 +135,23 @@ export default function ProductEdit() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, make API call to save product
-    alert(`Product ${isNew ? "created" : "updated"} successfully!`);
-    navigate("/dashboard/products");
+    const token = localStorage.getItem("craft_auth_token");
+    if (!token) {
+      alert("Please login again.");
+      return;
+    }
+    try {
+      if (isNew) {
+        await api.products.create(formData, token);
+      } else if (id) {
+        await api.products.update(id, formData, token);
+      }
+      navigate("/dashboard/products");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to save product");
+    }
   };
 
   return (

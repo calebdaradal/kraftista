@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from "react";
+import { api } from "@/lib/api";
 
 export interface CustomerUser {
   id: string;
@@ -41,18 +42,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      if (email && password.length >= 6) {
-        const mockUser: CustomerUser = {
-          id: Math.random().toString(),
-          email,
-          name: email.split("@")[0],
-        };
-        saveUser(mockUser);
-      } else {
-        throw new Error("Invalid email or password");
-      }
+      const result = await api.auth.login(email, password);
+      const currentUser: CustomerUser = {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        phone: result.user.phone,
+        address: result.user.address,
+      };
+      saveUser(currentUser);
+      localStorage.setItem("craft_customer_token", result.token);
     } finally {
       setIsLoading(false);
     }
@@ -61,18 +60,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const register = async (name: string, email: string, password: string) => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      if (email && password.length >= 6 && name) {
-        const mockUser: CustomerUser = {
-          id: Math.random().toString(),
-          email,
-          name,
-        };
-        saveUser(mockUser);
-      } else {
-        throw new Error("Invalid registration data");
-      }
+      const result = await api.auth.register(name, email, password, "customer");
+      const currentUser: CustomerUser = {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        phone: result.user.phone,
+        address: result.user.address,
+      };
+      saveUser(currentUser);
+      localStorage.setItem("craft_customer_token", result.token);
     } finally {
       setIsLoading(false);
     }
@@ -81,17 +78,23 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem("craft_customer_user");
+    localStorage.removeItem("craft_customer_token");
   };
 
   const updateProfile = async (profile: Partial<CustomerUser>) => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 400));
-
-      if (user) {
-        const updatedUser = { ...user, ...profile };
-        saveUser(updatedUser);
-      }
+      if (!user) return;
+      const token = localStorage.getItem("craft_customer_token");
+      if (!token) throw new Error("Please login again.");
+      const updated = await api.users.updateProfile(user.id, { ...user, ...profile }, token);
+      saveUser({
+        id: updated.id,
+        email: updated.email,
+        name: updated.name,
+        phone: updated.phone,
+        address: updated.address,
+      });
     } finally {
       setIsLoading(false);
     }

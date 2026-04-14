@@ -1,9 +1,16 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { products } from "@/data/products";
+import { useEffect, useState } from "react";
 import { BarChart3, Package, Users, TrendingUp, DollarSign } from "lucide-react";
 import { Link } from "react-router-dom";
+import { api } from "@/lib/api";
+import type { Product } from "@/types/product";
 
 export default function Dashboard() {
+  const [products, setProducts] = useState<Product[]>([]);
+  useEffect(() => {
+    api.products.list().then(setProducts).catch(() => setProducts([]));
+  }, []);
+
   const stats = [
     {
       label: "Total Products",

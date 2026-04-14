@@ -1,12 +1,17 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Save, Eye, Star } from "lucide-react";
-import { products } from "@/data/products";
 import { useSettings } from "@/context/SettingsContext";
+import { api } from "@/lib/api";
+import type { Product } from "@/types/product";
 
 export default function Settings() {
   const { settings: globalSettings, updateSettings } = useSettings();
   const [settings, setSettings] = useState(globalSettings);
+  const [products, setProducts] = useState<Product[]>([]);
+  useEffect(() => {
+    api.products.list().then(setProducts).catch(() => setProducts([]));
+  }, []);
 
   const [activeTab, setActiveTab] = useState<
     "general" | "branding" | "content" | "colors"

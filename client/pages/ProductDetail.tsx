@@ -1,8 +1,6 @@
 import { Layout } from "@/components/layout/Layout";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
-  getProductById,
-  getRelatedProducts,
   getProductGallerySlides,
   computeVariantLinePrice,
   resolveLineImageForCart,
@@ -23,6 +21,8 @@ import {
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
+import type { Product } from "@/types/product";
 
 function ProductSlideContent({ src, variant }: { src: string; variant: "main" | "thumb" }) {
   const t = src.trim();
@@ -86,8 +86,9 @@ export default function ProductDetail() {
     "details"
   );
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [product, setProduct] = useState<Product | undefined>(undefined);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
 
-  const product = id ? getProductById(id) : undefined;
   const slides = useMemo(
     () => (product ? getProductGallerySlides(product) : []),
     [product]
@@ -117,7 +118,20 @@ export default function ProductDetail() {
     el.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }, [galleryIndex]);
 
-  const relatedProducts = id ? getRelatedProducts(id) : [];
+  useEffect(() => {
+    if (!id) return;
+    api.products
+      .getById(id)
+      .then((fetched) => {
+        setProduct(fetched);
+        return api.products.list({ active: true, category: fetched.category });
+      })
+      .then((list) => setRelatedProducts(list.filter((item) => item.id !== id).slice(0, 4)))
+      .catch(() => {
+        setProduct(undefined);
+        setRelatedProducts([]);
+      });
+  }, [id]);
 
   if (!product) {
     return (
