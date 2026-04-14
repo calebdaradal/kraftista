@@ -81,6 +81,8 @@ export default function Shop() {
                     <img
                       src={product.image}
                       alt={product.name}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (

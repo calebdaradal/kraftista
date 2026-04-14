@@ -165,7 +165,7 @@ export default function Products() {
                   <div className="flex gap-3">
                     <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-muted flex items-center justify-center">
                       {isImageSource(product.image) ? (
-                        <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                        <img src={product.image} alt={product.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                       ) : (
                         <span className="text-3xl" aria-hidden>{product.image}</span>
                       )}
@@ -267,7 +267,7 @@ export default function Products() {
                       <div className="flex items-center gap-3">
                         <div className="h-12 w-12 overflow-hidden rounded-lg bg-muted flex items-center justify-center">
                           {isImageSource(product.image) ? (
-                            <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                            <img src={product.image} alt={product.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                           ) : (
                             <span className="text-3xl">{product.image}</span>
                           )}

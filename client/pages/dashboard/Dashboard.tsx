@@ -109,7 +109,7 @@ export default function Dashboard() {
               >
                 <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-muted flex items-center justify-center">
                   {isImageSource(product.image) ? (
-                    <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                    <img src={product.image} alt={product.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                   ) : (
                     <span className="text-2xl" aria-hidden>{product.image}</span>
                   )}
@@ -174,7 +174,7 @@ export default function Dashboard() {
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 overflow-hidden rounded-lg bg-muted flex items-center justify-center">
                           {isImageSource(product.image) ? (
-                            <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                            <img src={product.image} alt={product.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                           ) : (
                             <span className="text-2xl">{product.image}</span>
                           )}

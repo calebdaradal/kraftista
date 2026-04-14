@@ -31,6 +31,8 @@ function ProductSlideContent({ src, variant }: { src: string; variant: "main" | 
       <img
         src={t}
         alt=""
+        loading={variant === "thumb" ? "lazy" : "eager"}
+        decoding="async"
         className={
           variant === "main"
             ? "max-h-[85%] max-w-[85%] rounded-lg object-contain shadow-md"
@@ -446,6 +448,8 @@ export default function ProductDetail() {
                                     <img
                                       src={option.image}
                                       alt={option.label}
+                                      loading="lazy"
+                                      decoding="async"
                                       className="h-full w-full object-cover"
                                     />
                                   ) : (
@@ -857,6 +861,8 @@ export default function ProductDetail() {
                         <img
                           src={relatedProduct.image}
                           alt={relatedProduct.name}
+                          loading="lazy"
+                          decoding="async"
                           className="h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (

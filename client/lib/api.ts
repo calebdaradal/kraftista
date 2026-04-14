@@ -50,6 +50,13 @@ const request = async <T>(path: string, init: RequestInit = {}, token?: string):
     const message = await response.text();
     throw new Error(message || `Request failed (${response.status})`);
   }
+  if (response.status === 204) {
+    return undefined as T;
+  }
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    return (await response.text()) as T;
+  }
   return (await response.json()) as T;
 };
 
@@ -74,9 +81,9 @@ const normalizeProduct = (raw: any): Product => ({
   material: raw.materials ?? [],
   care: raw.care_instructions ?? [],
   active: Boolean(raw.active),
-  primaryVariation: undefined,
-  secondaryVariation: undefined,
-  tertiaryVariation: undefined,
+  primaryVariation: raw.primary_variation ?? undefined,
+  secondaryVariation: raw.secondary_variation ?? undefined,
+  tertiaryVariation: raw.tertiary_variation ?? undefined,
 });
 
 const getImageSourceForPayload = (payload: Product): string | null => {
@@ -160,6 +167,9 @@ export const api = {
               weight: payload.weight ? Number(payload.weight) : null,
               materials: payload.material ?? [],
               care_instructions: payload.care ?? [],
+              primary_variation: payload.primaryVariation ?? null,
+              secondary_variation: payload.secondaryVariation ?? null,
+              tertiary_variation: payload.tertiaryVariation ?? null,
             }),
           },
           token
@@ -191,6 +201,9 @@ export const api = {
               weight: payload.weight ? Number(payload.weight) : null,
               materials: payload.material ?? [],
               care_instructions: payload.care ?? [],
+              primary_variation: payload.primaryVariation ?? null,
+              secondary_variation: payload.secondaryVariation ?? null,
+              tertiary_variation: payload.tertiaryVariation ?? null,
             }),
           },
           token

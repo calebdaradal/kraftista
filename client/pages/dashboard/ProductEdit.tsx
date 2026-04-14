@@ -2,7 +2,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { EMPTY_TIER_VARIATIONS } from "@/data/products";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Save, X } from "lucide-react";
+import { ArrowLeft, Loader2, Save, X } from "lucide-react";
 import { ProductImageUpload } from "@/components/ProductImageUpload";
 import { ProductVariationsForm } from "@/components/ProductVariationsForm";
 import { Switch } from "@/components/ui/switch";
@@ -76,6 +76,7 @@ export default function ProductEdit() {
   const [thumbnailIndex, setThumbnailIndex] = useState(0);
   const [saleType, setSaleType] = useState<"price" | "percentage">("price");
   const [saleValue, setSaleValue] = useState<number | "">(formData.originalPrice || "");
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -158,12 +159,14 @@ export default function ProductEdit() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
     const token = localStorage.getItem("craft_auth_token");
     if (!token) {
       alert("Please login again.");
       return;
     }
     try {
+      setIsSaving(true);
       if (isNew) {
         await api.products.create(formData, token);
       } else if (id) {
@@ -174,6 +177,8 @@ export default function ProductEdit() {
       navigate("/dashboard/products");
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to save product");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -659,10 +664,20 @@ export default function ProductEdit() {
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <button
               type="submit"
+              disabled={isSaving}
               className="inline-flex min-h-[2.75rem] w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:w-auto"
             >
-              <Save className="h-5 w-5 shrink-0" />
-              {isNew ? "Create Product" : "Save Changes"}
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-5 w-5 shrink-0 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-5 w-5 shrink-0" />
+                  {isNew ? "Create Product" : "Save Changes"}
+                </>
+              )}
             </button>
             <Link
               to="/dashboard/products"
