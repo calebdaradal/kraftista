@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ShoppingCart, Heart, Star } from "lucide-react";
+import { ShoppingCart, Heart, Star, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { Product } from "@/types/product";
@@ -7,12 +7,14 @@ import type { Product } from "@/types/product";
 export function FeaturedProducts() {
   const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [isLoadingFeaturedProducts, setIsLoadingFeaturedProducts] = useState(true);
 
   useEffect(() => {
     api.products
       .list({ active: true, featured: true })
       .then(setFeaturedProducts)
-      .catch(() => setFeaturedProducts([]));
+      .catch(() => setFeaturedProducts([]))
+      .finally(() => setIsLoadingFeaturedProducts(false));
   }, []);
 
   return (
@@ -29,7 +31,15 @@ export function FeaturedProducts() {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {isLoadingFeaturedProducts ? (
+          <div className="rounded-xl border border-border bg-card px-6 py-16 text-center text-muted-foreground">
+            <span className="inline-flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading featured products...
+            </span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {featuredProducts.map((product) => (
             <Link
               key={product.id}
@@ -126,7 +136,8 @@ export function FeaturedProducts() {
               </div>
             </Link>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* View All Button */}
         <div className="text-center mt-12">

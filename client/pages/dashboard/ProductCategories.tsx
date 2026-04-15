@@ -1,22 +1,28 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { api, type TaxonomyItem } from "@/lib/api";
 import { useEffect, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 
 export default function ProductCategories() {
   const [categories, setCategories] = useState<TaxonomyItem[]>([]);
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [isLoadingList, setIsLoadingList] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  const [pendingActionId, setPendingActionId] = useState<string | null>(null);
 
   const token = localStorage.getItem("craft_auth_token") || "";
 
   const loadCategories = async () => {
     if (!token) return;
     try {
+      setIsLoadingList(true);
       setCategories(await api.products.listCategories(token));
     } catch {
       setCategories([]);
+    } finally {
+      setIsLoadingList(false);
     }
   };
 
@@ -26,17 +32,27 @@ export default function ProductCategories() {
 
   const handleCreate = async () => {
     if (!name.trim() || !token) return;
-    await api.products.createCategory(name.trim(), token);
-    setName("");
-    await loadCategories();
+    try {
+      setIsCreating(true);
+      await api.products.createCategory(name.trim(), token);
+      setName("");
+      await loadCategories();
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleUpdate = async (id: string) => {
     if (!editName.trim() || !token) return;
-    await api.products.updateCategory(id, editName.trim(), token);
-    setEditingId(null);
-    setEditName("");
-    await loadCategories();
+    try {
+      setPendingActionId(id);
+      await api.products.updateCategory(id, editName.trim(), token);
+      setEditingId(null);
+      setEditName("");
+      await loadCategories();
+    } finally {
+      setPendingActionId(null);
+    }
   };
 
   const handleDelete = async (id: string, categoryName: string) => {
@@ -46,8 +62,13 @@ export default function ProductCategories() {
       `${impact.product_count} products are currently using "${categoryName}". Delete this category and remove it from those products?`
     );
     if (!confirmed) return;
-    await api.products.deleteCategory(id, token);
-    await loadCategories();
+    try {
+      setPendingActionId(id);
+      await api.products.deleteCategory(id, token);
+      await loadCategories();
+    } finally {
+      setPendingActionId(null);
+    }
   };
 
   return (
@@ -71,10 +92,11 @@ export default function ProductCategories() {
             <button
               type="button"
               onClick={handleCreate}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground"
+              disabled={isCreating}
+              className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground"
             >
-              <Plus className="h-4 w-4" />
-              Add
+              {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              {isCreating ? "Adding..." : "Add"}
             </button>
           </div>
         </div>
@@ -89,7 +111,17 @@ export default function ProductCategories() {
               </tr>
             </thead>
             <tbody>
-              {categories.map((category) => (
+              {isLoadingList && (
+                <tr>
+                  <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading categories...
+                    </span>
+                  </td>
+                </tr>
+              )}
+              {!isLoadingList && categories.map((category) => (
                 <tr key={category.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3">
                     {editingId === category.id ? (
@@ -110,9 +142,17 @@ export default function ProductCategories() {
                           <button
                             type="button"
                             onClick={() => handleUpdate(category.id)}
+                            disabled={pendingActionId === category.id}
                             className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground"
                           >
-                            Save
+                            {pendingActionId === category.id ? (
+                              <span className="inline-flex items-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Saving...
+                              </span>
+                            ) : (
+                              "Save"
+                            )}
                           </button>
                           <button
                             type="button"
@@ -141,10 +181,11 @@ export default function ProductCategories() {
                           <button
                             type="button"
                             onClick={() => handleDelete(category.id, category.name)}
+                            disabled={pendingActionId === category.id}
                             className="rounded-lg border border-destructive/20 p-2 text-destructive"
                             title="Delete category"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {pendingActionId === category.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                           </button>
                         </>
                       )}
@@ -152,7 +193,7 @@ export default function ProductCategories() {
                   </td>
                 </tr>
               ))}
-              {categories.length === 0 && (
+              {!isLoadingList && categories.length === 0 && (
                 <tr>
                   <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
                     No categories yet.

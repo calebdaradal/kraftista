@@ -1,30 +1,36 @@
 import { Layout } from "@/components/layout/Layout";
-import { ShoppingCart, Heart, Star } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ShoppingCart, Heart, Star, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import type { Product } from "@/types/product";
-
-const categories = [
-  "All",
-  "Ceramics",
-  "Woodcraft",
-  "Textiles",
-  "Leather",
-  "Jewelry",
-  "Personal Care",
-  "Gardening",
-  "Kitchen",
-];
 
 export default function Shop() {
   const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [storefrontProducts, setStorefrontProducts] = useState<Product[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
   useEffect(() => {
-    api.products.list({ active: true }).then(setStorefrontProducts).catch(() => setStorefrontProducts([]));
+    api.products
+      .list({ active: true })
+      .then(setStorefrontProducts)
+      .catch(() => setStorefrontProducts([]))
+      .finally(() => setIsLoadingProducts(false));
   }, []);
+
+  const categories = useMemo(() => {
+    const dynamic = Array.from(new Set(storefrontProducts.map((product) => product.category).filter(Boolean))).sort((a, b) =>
+      a.localeCompare(b)
+    );
+    return ["All", ...dynamic];
+  }, [storefrontProducts]);
+
+  useEffect(() => {
+    if (!categories.includes(selectedCategory)) {
+      setSelectedCategory("All");
+    }
+  }, [categories, selectedCategory]);
 
   const filteredProducts =
     selectedCategory === "All"
@@ -68,7 +74,15 @@ export default function Shop() {
           </div>
 
           {/* Products Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {isLoadingProducts ? (
+            <div className="rounded-xl border border-border bg-card px-6 py-16 text-center text-muted-foreground">
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading products...
+              </span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
               <Link
                 key={product.id}
@@ -176,7 +190,8 @@ export default function Shop() {
                 </div>
               </Link>
             ))}
-          </div>
+            </div>
+          )}
         </div>
       </section>
     </Layout>

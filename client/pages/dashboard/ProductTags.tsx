@@ -1,22 +1,28 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { api, type TaxonomyItem } from "@/lib/api";
 import { useEffect, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 
 export default function ProductTags() {
   const [tags, setTags] = useState<TaxonomyItem[]>([]);
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [isLoadingList, setIsLoadingList] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  const [pendingActionId, setPendingActionId] = useState<string | null>(null);
 
   const token = localStorage.getItem("craft_auth_token") || "";
 
   const loadTags = async () => {
     if (!token) return;
     try {
+      setIsLoadingList(true);
       setTags(await api.products.listTags(token));
     } catch {
       setTags([]);
+    } finally {
+      setIsLoadingList(false);
     }
   };
 
@@ -26,17 +32,27 @@ export default function ProductTags() {
 
   const handleCreate = async () => {
     if (!name.trim() || !token) return;
-    await api.products.createTag(name.trim(), token);
-    setName("");
-    await loadTags();
+    try {
+      setIsCreating(true);
+      await api.products.createTag(name.trim(), token);
+      setName("");
+      await loadTags();
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleUpdate = async (id: string) => {
     if (!editName.trim() || !token) return;
-    await api.products.updateTag(id, editName.trim(), token);
-    setEditingId(null);
-    setEditName("");
-    await loadTags();
+    try {
+      setPendingActionId(id);
+      await api.products.updateTag(id, editName.trim(), token);
+      setEditingId(null);
+      setEditName("");
+      await loadTags();
+    } finally {
+      setPendingActionId(null);
+    }
   };
 
   const handleDelete = async (id: string, tagName: string) => {
@@ -46,8 +62,13 @@ export default function ProductTags() {
       `${impact.product_count} products are currently using "${tagName}". Delete this tag and remove it from those products?`
     );
     if (!confirmed) return;
-    await api.products.deleteTag(id, token);
-    await loadTags();
+    try {
+      setPendingActionId(id);
+      await api.products.deleteTag(id, token);
+      await loadTags();
+    } finally {
+      setPendingActionId(null);
+    }
   };
 
   return (
@@ -71,10 +92,11 @@ export default function ProductTags() {
             <button
               type="button"
               onClick={handleCreate}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground"
+              disabled={isCreating}
+              className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground"
             >
-              <Plus className="h-4 w-4" />
-              Add
+              {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              {isCreating ? "Adding..." : "Add"}
             </button>
           </div>
         </div>
@@ -89,7 +111,17 @@ export default function ProductTags() {
               </tr>
             </thead>
             <tbody>
-              {tags.map((tag) => (
+              {isLoadingList && (
+                <tr>
+                  <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading tags...
+                    </span>
+                  </td>
+                </tr>
+              )}
+              {!isLoadingList && tags.map((tag) => (
                 <tr key={tag.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3">
                     {editingId === tag.id ? (
@@ -110,9 +142,17 @@ export default function ProductTags() {
                           <button
                             type="button"
                             onClick={() => handleUpdate(tag.id)}
+                            disabled={pendingActionId === tag.id}
                             className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground"
                           >
-                            Save
+                            {pendingActionId === tag.id ? (
+                              <span className="inline-flex items-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Saving...
+                              </span>
+                            ) : (
+                              "Save"
+                            )}
                           </button>
                           <button
                             type="button"
@@ -141,10 +181,11 @@ export default function ProductTags() {
                           <button
                             type="button"
                             onClick={() => handleDelete(tag.id, tag.name)}
+                            disabled={pendingActionId === tag.id}
                             className="rounded-lg border border-destructive/20 p-2 text-destructive"
                             title="Delete tag"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {pendingActionId === tag.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                           </button>
                         </>
                       )}
@@ -152,7 +193,7 @@ export default function ProductTags() {
                   </td>
                 </tr>
               ))}
-              {tags.length === 0 && (
+              {!isLoadingList && tags.length === 0 && (
                 <tr>
                   <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
                     No tags yet.

@@ -1,6 +1,6 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useEffect, useState } from "react";
-import { BarChart3, Package, Users, TrendingUp, DollarSign } from "lucide-react";
+import { BarChart3, Package, Users, TrendingUp, DollarSign, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import type { Product } from "@/types/product";
@@ -8,8 +8,13 @@ import type { Product } from "@/types/product";
 export default function Dashboard() {
   const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
   const [products, setProducts] = useState<Product[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   useEffect(() => {
-    api.products.list().then(setProducts).catch(() => setProducts([]));
+    api.products
+      .list()
+      .then(setProducts)
+      .catch(() => setProducts([]))
+      .finally(() => setIsLoadingProducts(false));
   }, []);
 
   const stats = [
@@ -102,7 +107,15 @@ export default function Dashboard() {
 
           {/* Mobile: cards */}
           <ul className="space-y-3 md:hidden">
-            {recentProducts.map((product) => (
+            {isLoadingProducts ? (
+              <li className="rounded-lg border border-border bg-muted/30 p-4 text-center text-muted-foreground">
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading products...
+                </span>
+              </li>
+            ) : (
+              recentProducts.map((product) => (
               <li
                 key={product.id}
                 className="flex gap-3 rounded-lg border border-border bg-muted/30 p-3"
@@ -140,7 +153,7 @@ export default function Dashboard() {
                   </Link>
                 </div>
               </li>
-            ))}
+            )))}
           </ul>
 
           <div className="hidden overflow-x-auto md:block">
@@ -165,7 +178,17 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {recentProducts.map((product) => (
+                {isLoadingProducts ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                      <span className="inline-flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading products...
+                      </span>
+                    </td>
+                  </tr>
+                ) : (
+                  recentProducts.map((product) => (
                   <tr
                     key={product.id}
                     className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors"
@@ -219,7 +242,7 @@ export default function Dashboard() {
                       </Link>
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>

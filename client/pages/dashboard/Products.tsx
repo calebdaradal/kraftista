@@ -1,24 +1,39 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Search, Plus, Trash2, Edit, ChevronDown } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Search, Plus, Trash2, Edit, ChevronDown, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Product } from "@/types/product";
 import type { TaxonomyItem } from "@/lib/api";
 
 export default function Products() {
   const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [sortBy, setSortBy] = useState<"name" | "price" | "stock">("name");
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<TaxonomyItem[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
 
   useEffect(() => {
-    api.products.list().then(setProducts).catch(() => setProducts([]));
+    api.products
+      .list()
+      .then(setProducts)
+      .catch(() => setProducts([]))
+      .finally(() => setIsLoadingProducts(false));
     const token = localStorage.getItem("craft_auth_token");
-    if (!token) return;
-    api.products.listCategories(token).then(setCategories).catch(() => setCategories([]));
+    if (!token) {
+      setIsLoadingCategories(false);
+      return;
+    }
+    api.products
+      .listCategories(token)
+      .then(setCategories)
+      .catch(() => setCategories([]))
+      .finally(() => setIsLoadingCategories(false));
   }, []);
 
   const categoryOptions = ["All", ...categories.map((item) => item.name)];
@@ -42,13 +57,15 @@ export default function Products() {
     if (confirm("Are you sure you want to delete this product?")) {
       const token = localStorage.getItem("craft_auth_token");
       if (!token) {
-        alert("Please login again.");
+        navigate("/login");
         return;
       }
+      setDeletingProductId(id);
       api.products
         .remove(id, token)
         .then(() => setProducts((prev) => prev.filter((p) => p.id !== id)))
-        .catch((err) => alert(err.message || "Failed to delete product"));
+        .catch((err) => alert(err.message || "Failed to delete product"))
+        .finally(() => setDeletingProductId(null));
     }
   };
 
@@ -99,6 +116,7 @@ export default function Products() {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
+                  disabled={isLoadingCategories}
                   className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary appearance-none pr-10"
                 >
                   {categoryOptions.map((cat) => (
@@ -135,8 +153,17 @@ export default function Products() {
             {/* Results */}
             <div className="flex items-end sm:col-span-2 md:col-span-1">
               <p className="text-sm text-muted-foreground">
-                Showing <span className="font-semibold">{filteredProducts.length}</span> of{" "}
-                <span className="font-semibold">{products.length}</span> products
+                {isLoadingProducts ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading products...
+                  </span>
+                ) : (
+                  <>
+                    Showing <span className="font-semibold">{filteredProducts.length}</span> of{" "}
+                    <span className="font-semibold">{products.length}</span> products
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -144,7 +171,14 @@ export default function Products() {
 
         {/* Products: mobile cards */}
         <div className="md:hidden">
-          {filteredProducts.length === 0 ? (
+          {isLoadingProducts ? (
+            <div className="rounded-xl border border-border bg-card px-4 py-12 text-center">
+              <span className="inline-flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading products...
+              </span>
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="rounded-xl border border-border bg-card px-4 py-12 text-center">
               <p className="text-muted-foreground">
                 No products found. Try adjusting your filters.
@@ -212,10 +246,11 @@ export default function Products() {
                         <button
                           type="button"
                           onClick={() => handleDelete(product.id)}
+                          disabled={deletingProductId === product.id}
                           className="inline-flex items-center justify-center rounded-lg border border-destructive/30 bg-destructive/5 p-2 text-destructive"
                           title="Delete product"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          {deletingProductId === product.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                         </button>
                       </div>
                     </div>
@@ -253,7 +288,17 @@ export default function Products() {
                 </tr>
               </thead>
               <tbody>
-                {filteredProducts.map((product) => (
+                {isLoadingProducts ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-10 text-center text-muted-foreground">
+                      <span className="inline-flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading products...
+                      </span>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredProducts.map((product) => (
                   <tr
                     key={product.id}
                     className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors"
@@ -324,20 +369,21 @@ export default function Products() {
                         </Link>
                         <button
                           onClick={() => handleDelete(product.id)}
+                          disabled={deletingProductId === product.id}
                           className="p-2 hover:bg-destructive/10 rounded-lg transition-colors text-destructive"
                           title="Delete product"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {deletingProductId === product.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>
 
-          {filteredProducts.length === 0 && (
+          {!isLoadingProducts && filteredProducts.length === 0 && (
             <div className="px-4 py-12 text-center sm:px-6">
               <p className="text-muted-foreground">
                 No products found. Try adjusting your filters.
