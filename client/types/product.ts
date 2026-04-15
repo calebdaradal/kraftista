@@ -50,11 +50,11 @@ export interface Product {
   stockCount: number;
   sku: string;
   dimensions?: {
-    width: string;
-    height: string;
-    depth: string;
+    widthCm?: number;
+    heightCm?: number;
+    lengthCm?: number;
   };
-  weight?: string;
+  weightKg?: number;
   material?: string[];
   care?: string[];
   primaryVariation?: PrimaryVariation;

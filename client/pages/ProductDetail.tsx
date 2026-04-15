@@ -792,13 +792,13 @@ export default function ProductDetail() {
               <div className="lg:col-span-1">
                 <div className="bg-card border border-border rounded-lg p-6 space-y-4 sticky top-32">
                   <h4 className="font-semibold text-foreground">
-                    Product Information
+                    Product Info
                   </h4>
 
                   {product.material && (
                     <div>
                       <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">
-                        Material
+                        Materials
                       </p>
                       <p className="text-sm text-foreground">
                         {product.material.join(", ")}
@@ -814,27 +814,27 @@ export default function ProductDetail() {
                       <div className="space-y-1 text-sm">
                         <p>
                           <span className="text-muted-foreground">Width:</span>{" "}
-                          {product.dimensions.width}
+                          {product.dimensions.widthCm ?? "—"} cm
                         </p>
                         <p>
                           <span className="text-muted-foreground">Height:</span>{" "}
-                          {product.dimensions.height}
+                          {product.dimensions.heightCm ?? "—"} cm
                         </p>
                         <p>
-                          <span className="text-muted-foreground">Depth:</span>{" "}
-                          {product.dimensions.depth}
+                          <span className="text-muted-foreground">Length:</span>{" "}
+                          {product.dimensions.lengthCm ?? "—"} cm
                         </p>
                       </div>
                     </div>
                   )}
 
-                  {product.weight && (
+                  {product.weightKg != null && (
                     <div>
                       <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">
                         Weight
                       </p>
                       <p className="text-sm text-foreground">
-                        {product.weight}
+                        {product.weightKg} kg
                       </p>
                     </div>
                   )}

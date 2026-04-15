@@ -29,8 +29,8 @@ function mergeProductWithTiers(p: Product | null): Product {
       inStock: true,
       stockCount: 0,
       sku: "",
-      dimensions: undefined,
-      weight: "",
+      dimensions: { widthCm: undefined, heightCm: undefined, lengthCm: undefined },
+      weightKg: undefined,
       material: [],
       care: [],
       active: true,
@@ -638,6 +638,87 @@ export default function ProductEdit() {
                   </li>
                 ))}
               </ul>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">
+                Product Info
+              </label>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-muted-foreground">Width (cm)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.dimensions?.widthCm ?? ""}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        dimensions: {
+                          ...(prev.dimensions ?? {}),
+                          widthCm: e.target.value === "" ? undefined : Number(e.target.value),
+                        },
+                      }))
+                    }
+                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-muted-foreground">Height (cm)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.dimensions?.heightCm ?? ""}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        dimensions: {
+                          ...(prev.dimensions ?? {}),
+                          heightCm: e.target.value === "" ? undefined : Number(e.target.value),
+                        },
+                      }))
+                    }
+                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-muted-foreground">Length (cm)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.dimensions?.lengthCm ?? ""}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        dimensions: {
+                          ...(prev.dimensions ?? {}),
+                          lengthCm: e.target.value === "" ? undefined : Number(e.target.value),
+                        },
+                      }))
+                    }
+                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-muted-foreground">Weight (kg)</label>
+                  <input
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    value={formData.weightKg ?? ""}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        weightKg: e.target.value === "" ? undefined : Number(e.target.value),
+                      }))
+                    }
+                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Care Instructions */}
