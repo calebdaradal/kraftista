@@ -29,6 +29,9 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import Dashboard from "./pages/dashboard/Dashboard";
 import Products from "./pages/dashboard/Products";
 import ProductEdit from "./pages/dashboard/ProductEdit";
+import ProductCategories from "./pages/dashboard/ProductCategories";
+import ProductTags from "./pages/dashboard/ProductTags";
+import ProductFeatured from "./pages/dashboard/ProductFeatured";
 import Analytics from "./pages/dashboard/Analytics";
 import Settings from "./pages/dashboard/Settings";
 
@@ -75,6 +78,30 @@ export default function App() {
                     element={
                       <ProtectedRoute>
                         <Products />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/dashboard/products/categories"
+                    element={
+                      <ProtectedRoute>
+                        <ProductCategories />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/dashboard/products/tags"
+                    element={
+                      <ProtectedRoute>
+                        <ProductTags />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/dashboard/products/featured"
+                    element={
+                      <ProtectedRoute>
+                        <ProductFeatured />
                       </ProtectedRoute>
                     }
                   />

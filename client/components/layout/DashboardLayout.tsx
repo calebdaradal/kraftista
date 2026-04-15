@@ -10,6 +10,8 @@ import {
   Settings,
   BarChart3,
   User,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,10 +27,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   sidebarOpenRef.current = sidebarOpen;
   const location = useLocation();
   const { user, logout } = useAuth();
+  const [productsOpen, setProductsOpen] = useState(() => location.pathname.startsWith("/dashboard/products"));
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
     if (mq.matches) setSidebarOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (location.pathname.startsWith("/dashboard/products")) {
+      setProductsOpen(true);
+    }
   }, [location.pathname]);
 
   useEffect(() => {
@@ -58,6 +67,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       label: "Products",
       href: "/dashboard/products",
       icon: Package,
+      children: [
+        { label: "All Products", href: "/dashboard/products" },
+        { label: "Categories", href: "/dashboard/products/categories" },
+        { label: "Tags", href: "/dashboard/products/tags" },
+        { label: "Featured", href: "/dashboard/products/featured" },
+      ],
     },
     {
       label: "Analytics",
@@ -72,6 +87,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   ];
 
   const isActive = (href: string) => location.pathname === href;
+  const isProductsSection = location.pathname.startsWith("/dashboard/products");
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -117,25 +133,68 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const active = isActive(item.href);
+            const active = item.children ? isProductsSection : isActive(item.href);
+            const hasChildren = Boolean(item.children?.length);
             return (
-              <Link
-                key={item.href}
-                to={item.href}
-                onClick={() => {
-                  if (window.innerWidth < 768) setSidebarOpen(false);
-                }}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-                  active
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted"
+              <div key={item.href} className="space-y-1">
+                {hasChildren ? (
+                  <button
+                    type="button"
+                    onClick={() => setProductsOpen((prev) => !prev)}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors",
+                      active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                    )}
+                    title={!sidebarOpen ? item.label : undefined}
+                  >
+                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    {sidebarOpen && (
+                      <>
+                        <span className="font-medium">{item.label}</span>
+                        <span className="ml-auto">
+                          {productsOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <Link
+                    to={item.href}
+                    onClick={() => {
+                      if (window.innerWidth < 768) setSidebarOpen(false);
+                    }}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                      active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                    )}
+                    title={!sidebarOpen ? item.label : undefined}
+                  >
+                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    {sidebarOpen && <span className="font-medium">{item.label}</span>}
+                  </Link>
                 )}
-                title={!sidebarOpen ? item.label : undefined}
-              >
-                <Icon className="w-5 h-5 flex-shrink-0" />
-                {sidebarOpen && <span className="font-medium">{item.label}</span>}
-              </Link>
+                {hasChildren && productsOpen && sidebarOpen && (
+                  <div className="ml-8 space-y-1">
+                    {item.children!.map((child) => (
+                      <Link
+                        key={child.href}
+                        to={child.href}
+                        onClick={() => {
+                          if (window.innerWidth < 768) setSidebarOpen(false);
+                        }}
+                        className={cn(
+                          "block rounded-lg px-3 py-2 text-sm transition-colors",
+                          isActive(child.href)
+                            ? "bg-primary/15 text-foreground font-semibold"
+                            : "text-muted-foreground hover:bg-muted"
+                        )}
+                      >
+                        {child.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>

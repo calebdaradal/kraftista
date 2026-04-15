@@ -23,6 +23,7 @@ function mergeProductWithTiers(p: Product | null): Product {
       image: "🎨",
       category: "Ceramics",
       tags: [],
+      featured: false,
       rating: 4.5,
       reviewCount: 0,
       inStock: true,
@@ -39,6 +40,7 @@ function mergeProductWithTiers(p: Product | null): Product {
   return {
     ...p,
     active: p.active !== false,
+    featured: p.featured === true,
     primaryVariation: p.primaryVariation ?? tiers.primaryVariation,
     secondaryVariation: p.secondaryVariation ?? tiers.secondaryVariation,
     tertiaryVariation: p.tertiaryVariation ?? tiers.tertiaryVariation,
@@ -59,6 +61,8 @@ export default function ProductEdit() {
   const [newMaterial, setNewMaterial] = useState("");
   const [newCare, setNewCare] = useState("");
   const [images, setImages] = useState<string[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+  const [tagOptions, setTagOptions] = useState<string[]>([]);
   useEffect(() => {
     if (isNew || !id) return;
     api.products
@@ -72,6 +76,19 @@ export default function ProductEdit() {
       })
       .catch(() => navigate("/dashboard/products"));
   }, [id, isNew, navigate]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("craft_auth_token");
+    if (!token) return;
+    api.products
+      .listCategories(token)
+      .then((items) => setCategoryOptions(items.map((item) => item.name)))
+      .catch(() => setCategoryOptions([]));
+    api.products
+      .listTags(token)
+      .then((items) => setTagOptions(items.map((item) => item.name)))
+      .catch(() => setTagOptions([]));
+  }, []);
 
   const [thumbnailIndex, setThumbnailIndex] = useState(0);
   const [saleType, setSaleType] = useState<"price" | "percentage">("price");
@@ -96,10 +113,11 @@ export default function ProductEdit() {
   };
 
   const handleAddTag = () => {
-    if (newTag.trim()) {
+    const normalized = newTag.trim();
+    if (normalized) {
       setFormData({
         ...formData,
-        tags: [...(formData.tags || []), newTag],
+        tags: Array.from(new Set([...(formData.tags || []), normalized])),
       });
       setNewTag("");
     }
@@ -346,14 +364,12 @@ export default function ProductEdit() {
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   >
-                    <option>Ceramics</option>
-                    <option>Woodcraft</option>
-                    <option>Textiles</option>
-                    <option>Leather</option>
-                    <option>Jewelry</option>
-                    <option>Personal Care</option>
-                    <option>Gardening</option>
-                    <option>Kitchen</option>
+                    <option value="">Uncategorized</option>
+                    {categoryOptions.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -546,10 +562,16 @@ export default function ProductEdit() {
                   type="text"
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
+                  list="existing-tags"
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddTag())}
                   placeholder="Add a tag..."
                   className="min-h-[2.75rem] min-w-0 flex-1 rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
+                <datalist id="existing-tags">
+                  {tagOptions.map((tag) => (
+                    <option key={tag} value={tag} />
+                  ))}
+                </datalist>
                 <button
                   type="button"
                   onClick={handleAddTag}

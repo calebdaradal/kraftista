@@ -43,6 +43,7 @@ export interface Product {
   gallery?: string[];
   category: string;
   tags: string[];
+  featured: boolean;
   rating: number;
   reviewCount: number;
   inStock: boolean;

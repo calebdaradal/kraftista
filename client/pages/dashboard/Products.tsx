@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Search, Plus, Trash2, Edit, ChevronDown } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Product } from "@/types/product";
+import type { TaxonomyItem } from "@/lib/api";
 
 export default function Products() {
   const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
@@ -11,22 +12,16 @@ export default function Products() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [sortBy, setSortBy] = useState<"name" | "price" | "stock">("name");
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<TaxonomyItem[]>([]);
 
   useEffect(() => {
     api.products.list().then(setProducts).catch(() => setProducts([]));
+    const token = localStorage.getItem("craft_auth_token");
+    if (!token) return;
+    api.products.listCategories(token).then(setCategories).catch(() => setCategories([]));
   }, []);
 
-  const categories = [
-    "All",
-    "Ceramics",
-    "Woodcraft",
-    "Textiles",
-    "Leather",
-    "Jewelry",
-    "Personal Care",
-    "Gardening",
-    "Kitchen",
-  ];
+  const categoryOptions = ["All", ...categories.map((item) => item.name)];
 
   const filteredProducts = products
     .filter((p) => {
@@ -106,7 +101,7 @@ export default function Products() {
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary appearance-none pr-10"
                 >
-                  {categories.map((cat) => (
+                  {categoryOptions.map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}
                     </option>

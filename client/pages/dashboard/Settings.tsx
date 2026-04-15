@@ -1,18 +1,11 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useEffect, useState } from "react";
-import { Save, Eye, Star } from "lucide-react";
+import { useState } from "react";
+import { Save, Eye } from "lucide-react";
 import { useSettings } from "@/context/SettingsContext";
-import { api } from "@/lib/api";
-import type { Product } from "@/types/product";
 
 export default function Settings() {
-  const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
   const { settings: globalSettings, updateSettings } = useSettings();
   const [settings, setSettings] = useState(globalSettings);
-  const [products, setProducts] = useState<Product[]>([]);
-  useEffect(() => {
-    api.products.list().then(setProducts).catch(() => setProducts([]));
-  }, []);
 
   const [activeTab, setActiveTab] = useState<
     "general" | "branding" | "content" | "colors"
@@ -174,83 +167,9 @@ export default function Settings() {
                   </p>
                 </div>
 
-                <div className="border-t border-border pt-6">
-                  <label className="block text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <Star className="w-4 h-4 text-primary" />
-                    Featured Products
-                  </label>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Select up to 4 products to feature on your homepage. These will be displayed
-                    in the featured collection section.
-                  </p>
-                  <div className="space-y-2">
-                    {products.map((product) => (
-                      <label
-                        key={product.id}
-                        className="flex items-center gap-3 p-3 border border-border rounded-lg hover:border-primary/30 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={settings.featuredProductIds.includes(
-                            product.id
-                          )}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              if (settings.featuredProductIds.length < 4) {
-                                setSettings({
-                                  ...settings,
-                                  featuredProductIds: [
-                                    ...settings.featuredProductIds,
-                                    product.id,
-                                  ],
-                                });
-                              }
-                            } else {
-                              setSettings({
-                                ...settings,
-                                featuredProductIds:
-                                  settings.featuredProductIds.filter(
-                                    (p) => p !== product.id
-                                  ),
-                              });
-                            }
-                          }}
-                          disabled={
-                            !settings.featuredProductIds.includes(product.id) &&
-                            settings.featuredProductIds.length >= 4
-                          }
-                          className="w-4 h-4 rounded border-border bg-input disabled:opacity-50 disabled:cursor-not-allowed"
-                        />
-                        <div className="h-10 w-10 overflow-hidden rounded-lg bg-muted flex items-center justify-center">
-                          {isImageSource(product.image) ? (
-                            <img src={product.image} alt={product.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
-                          ) : (
-                            <span className="text-2xl">{product.image}</span>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-medium text-foreground text-sm">
-                              {product.name}
-                            </p>
-                            {!product.active && (
-                              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                                Off
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            {product.category}
-                            {!product.active && " · Hidden from shop"}
-                          </p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-4">
-                    Selected: {settings.featuredProductIds.length} / 4
-                  </p>
-                </div>
+                <p className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-muted-foreground">
+                  Featured products are now managed in the Products submenu under the Featured page.
+                </p>
               </div>
             )}
 

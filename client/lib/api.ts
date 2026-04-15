@@ -40,6 +40,13 @@ export interface FrontendUser {
   };
 }
 
+export interface TaxonomyItem {
+  id: string;
+  name: string;
+  slug: string;
+  product_count: number;
+}
+
 const request = async <T>(path: string, init: RequestInit = {}, token?: string): Promise<T> => {
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json");
@@ -71,6 +78,7 @@ const normalizeProduct = (raw: any): Product => ({
   gallery: raw.gallery_urls ?? [],
   category: raw.category ?? "Uncategorized",
   tags: raw.tags ?? [],
+  featured: Boolean(raw.featured),
   rating: Number(raw.rating ?? 0),
   reviewCount: Number(raw.review_count ?? 0),
   inStock: Boolean(raw.in_stock),
@@ -128,10 +136,11 @@ const toApiUserUpdate = (payload: Partial<FrontendUser>) => ({
 
 export const api = {
   products: {
-    async list(params?: { category?: string; active?: boolean; q?: string }) {
+    async list(params?: { category?: string; active?: boolean; featured?: boolean; q?: string }) {
       const query = new URLSearchParams();
       if (params?.category) query.set("category", params.category);
       if (params?.active !== undefined) query.set("active", String(params.active));
+      if (params?.featured !== undefined) query.set("featured", String(params.featured));
       if (params?.q) query.set("q", params.q);
       const suffix = query.toString() ? `?${query.toString()}` : "";
       const data = await request<any[]>(`/products${suffix}`);
@@ -152,7 +161,8 @@ export const api = {
               sku: payload.sku,
               short_description: payload.shortDescription,
               full_description: payload.fullDescription,
-              category: payload.category,
+              category: payload.category?.trim() ? payload.category : null,
+              featured: payload.featured,
               active: payload.active,
               price: payload.price,
               original_price: payload.originalPrice,
@@ -188,7 +198,8 @@ export const api = {
               sku: payload.sku,
               short_description: payload.shortDescription,
               full_description: payload.fullDescription,
-              category: payload.category,
+              category: payload.category?.trim() ? payload.category : null,
+              featured: payload.featured,
               active: payload.active,
               price: payload.price,
               original_price: payload.originalPrice,
@@ -212,6 +223,36 @@ export const api = {
     },
     async remove(id: string, token: string) {
       await request<void>(`/products/${id}`, { method: "DELETE" }, token);
+    },
+    async listCategories(token: string) {
+      return request<TaxonomyItem[]>("/products/categories", {}, token);
+    },
+    async createCategory(name: string, token: string) {
+      return request<TaxonomyItem>("/products/categories", { method: "POST", body: JSON.stringify({ name }) }, token);
+    },
+    async updateCategory(id: string, name: string, token: string) {
+      return request<TaxonomyItem>(`/products/categories/${id}`, { method: "PATCH", body: JSON.stringify({ name }) }, token);
+    },
+    async getCategoryImpact(id: string, token: string) {
+      return request<{ product_count: number }>(`/products/categories/${id}/impact`, {}, token);
+    },
+    async deleteCategory(id: string, token: string) {
+      await request<void>(`/products/categories/${id}`, { method: "DELETE" }, token);
+    },
+    async listTags(token: string) {
+      return request<TaxonomyItem[]>("/products/tags", {}, token);
+    },
+    async createTag(name: string, token: string) {
+      return request<TaxonomyItem>("/products/tags", { method: "POST", body: JSON.stringify({ name }) }, token);
+    },
+    async updateTag(id: string, name: string, token: string) {
+      return request<TaxonomyItem>(`/products/tags/${id}`, { method: "PATCH", body: JSON.stringify({ name }) }, token);
+    },
+    async getTagImpact(id: string, token: string) {
+      return request<{ product_count: number }>(`/products/tags/${id}/impact`, {}, token);
+    },
+    async deleteTag(id: string, token: string) {
+      await request<void>(`/products/tags/${id}`, { method: "DELETE" }, token);
     },
   },
   auth: {
