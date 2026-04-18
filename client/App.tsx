@@ -18,6 +18,9 @@ import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Profile from "./pages/Profile";
+import AccountOrders from "./pages/AccountOrders";
+import AccountLikes from "./pages/AccountLikes";
+import AccountReviews from "./pages/AccountReviews";
 import NotFound from "./pages/NotFound";
 
 // Auth Pages
@@ -34,6 +37,7 @@ import ProductTags from "./pages/dashboard/ProductTags";
 import ProductFeatured from "./pages/dashboard/ProductFeatured";
 import Analytics from "./pages/dashboard/Analytics";
 import Settings from "./pages/dashboard/Settings";
+import Orders from "./pages/dashboard/Orders";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +60,9 @@ export default function App() {
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/profile" element={<Profile />} />
+                  <Route path="/account/orders" element={<AccountOrders />} />
+                  <Route path="/account/likes" element={<AccountLikes />} />
+                  <Route path="/account/reviews" element={<AccountReviews />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/contact" element={<Contact />} />
 
@@ -118,6 +125,14 @@ export default function App() {
                     element={
                       <ProtectedRoute>
                         <ProductEdit />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/dashboard/orders"
+                    element={
+                      <ProtectedRoute>
+                        <Orders />
                       </ProtectedRoute>
                     }
                   />

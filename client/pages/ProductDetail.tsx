@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
+import { useUser } from "@/context/UserContext";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import type { Product } from "@/types/product";
@@ -81,6 +82,7 @@ export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { user } = useUser();
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
   const [selectedVariations, setSelectedVariations] = useState<
@@ -146,6 +148,38 @@ export default function ProductDetail() {
         setIsLoading(false);
       });
   }, [id]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("craft_customer_token");
+    if (!id || !user || !token) {
+      setIsFavorite(false);
+      return;
+    }
+    api.customer
+      .listLikes(token)
+      .then((likes) => setIsFavorite(likes.some((like) => like.product_id === id)))
+      .catch(() => setIsFavorite(false));
+  }, [id, user]);
+  const handleToggleLike = async () => {
+    const token = localStorage.getItem("craft_customer_token");
+    if (!id || !user || !token) {
+      navigate("/");
+      return;
+    }
+
+    try {
+      if (isFavorite) {
+        await api.customer.removeLike(id, token);
+        setIsFavorite(false);
+      } else {
+        await api.customer.addLike(id, token);
+        setIsFavorite(true);
+      }
+    } catch {
+      // Intentionally keep a silent fail here to avoid interrupting checkout flow UX.
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -595,7 +629,7 @@ export default function ProductDetail() {
                   </div>
 
                   <button
-                    onClick={() => setIsFavorite(!isFavorite)}
+                    onClick={handleToggleLike}
                     className={`p-3 rounded-lg border-2 transition-colors ${
                       isFavorite
                         ? "bg-destructive/10 border-destructive text-destructive"

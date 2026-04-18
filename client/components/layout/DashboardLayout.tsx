@@ -7,6 +7,7 @@ import {
   LogOut,
   LayoutDashboard,
   Package,
+  Truck,
   Settings,
   BarChart3,
   User,
@@ -78,6 +79,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       label: "Analytics",
       href: "/dashboard/analytics",
       icon: BarChart3,
+    },
+    {
+      label: "Orders",
+      href: "/dashboard/orders",
+      icon: Truck,
     },
     {
       label: "Settings",

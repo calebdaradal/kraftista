@@ -5,11 +5,13 @@ import { cn } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useUser } from "@/context/UserContext";
 import { CheckoutModal } from "@/components/CheckoutModal";
+import { api } from "@/lib/api";
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingReviewCount, setPendingReviewCount] = useState(0);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { itemCount } = useCart();
@@ -37,6 +39,18 @@ export function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const token = localStorage.getItem("craft_customer_token");
+    if (!user || !token) {
+      setPendingReviewCount(0);
+      return;
+    }
+    api.customer
+      .getReviewNotifications(token)
+      .then((res) => setPendingReviewCount(res.pending_count))
+      .catch(() => setPendingReviewCount(0));
+  }, [user]);
+
   const handleLogout = () => {
     logout();
     setIsUserMenuOpen(false);
@@ -45,6 +59,11 @@ export function Header() {
 
   const handleProfileClick = () => {
     navigate("/profile");
+    setIsUserMenuOpen(false);
+  };
+
+  const handleMenuNavigate = (href: string) => {
+    navigate(href);
     setIsUserMenuOpen(false);
   };
 
@@ -125,7 +144,30 @@ export function Header() {
                       className="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-2"
                     >
                       <User className="w-4 h-4" />
-                      My Profile
+                      Profile
+                    </button>
+                    <button
+                      onClick={() => handleMenuNavigate("/account/orders")}
+                      className="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                    >
+                      Orders
+                    </button>
+                    <button
+                      onClick={() => handleMenuNavigate("/account/likes")}
+                      className="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                    >
+                      Likes
+                    </button>
+                    <button
+                      onClick={() => handleMenuNavigate("/account/reviews")}
+                      className="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors flex items-center justify-between gap-3"
+                    >
+                      <span>Reviews</span>
+                      {pendingReviewCount > 0 ? (
+                        <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-xs font-semibold text-primary-foreground">
+                          {pendingReviewCount > 99 ? "99+" : pendingReviewCount}
+                        </span>
+                      ) : null}
                     </button>
                     <button
                       onClick={handleLogout}

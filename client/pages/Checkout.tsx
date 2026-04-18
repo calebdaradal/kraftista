@@ -7,6 +7,19 @@ import { Check, Package, Truck, Lock, AlertCircle, Link as LinkIcon } from "luci
 import { useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
 
+// TODO[TEMP_PAYMENT_BYPASS_REMOVE_BEFORE_LIVE]:
+// This temporary flag forces orders through without real payment processing.
+// Replace this with actual payment intent/authorization flow before production launch.
+const TEMP_PAYMENT_BYPASS_ENABLED = true;
+
+const sanitizeCartImage = (image: string) => {
+  if (!image) return null;
+  const trimmed = image.trim();
+  if (!trimmed) return null;
+  // Backend cart_items.image_url is VARCHAR(512); avoid pushing huge data URLs.
+  return trimmed.length > 512 ? null : trimmed;
+};
+
 export default function Checkout() {
   const { items, totalPrice, clearCart } = useCart();
   const { user } = useUser();
@@ -14,6 +27,8 @@ export default function Checkout() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderNote, setOrderNote] = useState("");
+  const [checkoutError, setCheckoutError] = useState("");
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
   const subtotal = totalPrice;
   const tax = subtotal * 0.08;
@@ -29,11 +44,12 @@ export default function Checkout() {
     user.address.country;
 
   const handleCheckout = () => {
+    setCheckoutError("");
     if (!user) {
       setShowAuthModal(true);
       return;
     }
-    if (!hasAddress) {
+    if (!TEMP_PAYMENT_BYPASS_ENABLED && !hasAddress) {
       return; // Show warning in UI, prevent checkout
     }
     completeCheckout();
@@ -41,19 +57,59 @@ export default function Checkout() {
 
   const completeCheckout = async () => {
     const token = localStorage.getItem("craft_customer_token");
-    if (!token || !user?.address) return;
+    if (!user) {
+      setCheckoutError("Please sign in to place your order.");
+      setShowAuthModal(true);
+      return;
+    }
+    if (!token) {
+      setCheckoutError("Your session expired. Please sign in again.");
+      setShowAuthModal(true);
+      return;
+    }
+    if (items.length === 0) {
+      setCheckoutError("Your cart is empty.");
+      return;
+    }
+
+    const shippingAddress = {
+      full_name: user.name || "Customer",
+      phone: user.phone || "Not provided",
+      street: user.address?.street || "Address pending",
+      city: user.address?.city || "Unknown city",
+      state: user.address?.state || "Unknown state",
+      zip_code: user.address?.zipCode || "00000",
+      country: user.address?.country || "Unknown country",
+    };
+
+    setIsSubmittingOrder(true);
+    setCheckoutError("");
     try {
+      // TODO[TEMP_PAYMENT_BYPASS_REMOVE_BEFORE_LIVE]:
+      // Ensure local cart entries are synced before checkout while payment flow is temporary.
+      await Promise.all(
+        items.map((item) =>
+          api.customer.upsertCartItem(
+            {
+              product_id: item.productId,
+              quantity: item.quantity,
+              selected_variations: item.selectedVariations ?? {},
+              unit_price: item.price,
+              image_url: sanitizeCartImage(item.image),
+              product_name: item.name,
+            },
+            token
+          )
+        )
+      );
+
       await api.customer.checkout(
         {
-          payment_method: "card",
-          order_note: orderNote,
-          shipping_address: {
-            street: user.address.street,
-            city: user.address.city,
-            state: user.address.state,
-            zip_code: user.address.zipCode,
-            country: user.address.country,
-          },
+          // TODO[TEMP_PAYMENT_BYPASS_REMOVE_BEFORE_LIVE]:
+          // Marker kept in backend data only; remove when real payment is integrated.
+          payment_method: TEMP_PAYMENT_BYPASS_ENABLED ? "manual_test_bypass" : "card",
+          order_note,
+          shipping_address: shippingAddress,
         },
         token
       );
@@ -62,8 +118,10 @@ export default function Checkout() {
       setTimeout(() => {
         window.location.href = "/";
       }, 3000);
-    } catch {
-      // Keep UI behavior simple for now; backend validation errors can be shown later.
+    } catch (err) {
+      setCheckoutError(err instanceof Error ? err.message : "Unable to place order right now.");
+    } finally {
+      setIsSubmittingOrder(false);
     }
   };
 
@@ -245,6 +303,12 @@ export default function Checkout() {
                 </div>
               </div>
 
+              {checkoutError && (
+                <div className="rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
+                  {checkoutError}
+                </div>
+              )}
+
               {/* Payment Method */}
               <div className="bg-card border border-border rounded-xl p-6 space-y-4">
                 <h2 className="font-semibold text-foreground text-lg flex items-center gap-2">
@@ -346,11 +410,12 @@ export default function Checkout() {
                 </div>
 
                 <button
+                  type="button"
                   onClick={handleCheckout}
-                  disabled={user && !hasAddress}
+                  disabled={isSubmittingOrder}
                   className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {!user ? "Sign In to Continue" : hasAddress ? "Place Order" : "Complete Address in Profile"}
+                  {!user ? "Sign In to Continue" : isSubmittingOrder ? "Placing Order..." : "Place Order"}
                 </button>
 
                 {!user && (
@@ -358,7 +423,7 @@ export default function Checkout() {
                     You'll be prompted to sign in or create an account
                   </p>
                 )}
-                {user && !hasAddress && (
+                {user && !hasAddress && !TEMP_PAYMENT_BYPASS_ENABLED && (
                   <p className="text-xs text-destructive text-center">
                     Please complete your shipping address in your profile to continue
                   </p>

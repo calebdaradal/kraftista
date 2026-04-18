@@ -36,6 +36,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
+  const sanitizeImageForApi = (image: string) => {
+    const value = image?.trim?.() ?? "";
+    if (!value) return null;
+    return value.length > 512 ? null : value;
+  };
+
   const saveCart = (newItems: CartItem[]) => {
     setItems(newItems);
     localStorage.setItem("craft_cart", JSON.stringify(newItems));
@@ -84,7 +90,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             quantity: newItem.quantity,
             selected_variations: newItem.selectedVariations,
             unit_price: newItem.price,
-            image_url: newItem.image,
+              image_url: sanitizeImageForApi(newItem.image),
             product_name: newItem.name,
           },
           token
@@ -139,7 +145,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
               quantity: Math.max(0, quantity),
               selected_variations: item.selectedVariations,
               unit_price: item.price,
-              image_url: item.image,
+              image_url: sanitizeImageForApi(item.image),
               product_name: item.name,
             },
             token

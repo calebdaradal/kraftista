@@ -1,7 +1,11 @@
 import type { Product } from "@/types/product";
 
 const defaultApiBase =
-  typeof window !== "undefined" ? `${window.location.origin}/api` : "http://127.0.0.1:8000/api";
+  typeof window === "undefined"
+    ? "http://127.0.0.1:8000/api"
+    : import.meta.env.DEV
+      ? "http://127.0.0.1:8000/api"
+      : `${window.location.origin}/api`;
 const API_BASE = (import.meta.env.VITE_API_URL || defaultApiBase).replace(/\/$/, "");
 
 type UserRole = "customer" | "admin" | "editor";
@@ -46,6 +50,70 @@ export interface TaxonomyItem {
   slug: string;
   product_count: number;
 }
+
+export interface CustomerOrderItem {
+  id: string;
+  product_id: string;
+  quantity: number;
+  selected_variations: Record<string, string>;
+  unit_price: number;
+  line_total: number;
+  product_name: string;
+  image_url?: string | null;
+}
+
+export interface CustomerOrder {
+  id: string;
+  user_id: string;
+  status: string;
+  subtotal: number;
+  tax: number;
+  shipping: number;
+  total: number;
+  payment_method: string;
+  order_note?: string | null;
+  shipping_address: Record<string, string>;
+  tracking_reference?: string | null;
+  delivered_at?: string | null;
+  created_at: string;
+  items: CustomerOrderItem[];
+}
+
+export interface ProductLike {
+  id: string;
+  product_id: string;
+  created_at: string;
+}
+
+export interface PendingReviewItem {
+  order_id: string;
+  order_item_id: string;
+  product_id: string;
+  product_name: string;
+  image_url?: string | null;
+  delivered_at?: string | null;
+}
+
+export interface ProductReview {
+  id: string;
+  order_id: string;
+  order_item_id: string;
+  product_id: string;
+  product_name: string;
+  image_url?: string | null;
+  rating: number;
+  comment?: string | null;
+  moderation_status: "pending" | "approved" | "rejected";
+  moderation_note?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReviewNotification {
+  pending_count: number;
+}
+
+export interface SellerOrder extends CustomerOrder {}
 
 const request = async <T>(path: string, init: RequestInit = {}, token?: string): Promise<T> => {
   const headers = new Headers(init.headers);
@@ -306,10 +374,63 @@ export const api = {
       return request<any>(`/customer/cart/items/${itemId}`, { method: "DELETE" }, token);
     },
     async checkout(payload: any, token: string) {
-      return request<any>("/customer/checkout", { method: "POST", body: JSON.stringify(payload) }, token);
+      return request<CustomerOrder>("/customer/checkout", { method: "POST", body: JSON.stringify(payload) }, token);
     },
     async listOrders(token: string) {
-      return request<any[]>("/customer/orders", {}, token);
+      return request<CustomerOrder[]>("/customer/orders", {}, token);
+    },
+    async getOrder(orderId: string, token: string) {
+      return request<CustomerOrder>(`/customer/orders/${orderId}`, {}, token);
+    },
+    async listLikes(token: string) {
+      return request<ProductLike[]>("/customer/likes", {}, token);
+    },
+    async addLike(productId: string, token: string) {
+      return request<ProductLike>("/customer/likes", { method: "POST", body: JSON.stringify({ product_id: productId }) }, token);
+    },
+    async removeLike(productId: string, token: string) {
+      return request<void>(`/customer/likes/${productId}`, { method: "DELETE" }, token);
+    },
+    async listPendingReviews(token: string) {
+      return request<PendingReviewItem[]>("/customer/reviews/pending", {}, token);
+    },
+    async submitReview(payload: { order_item_id: string; rating: number; comment?: string }, token: string) {
+      return request<ProductReview>("/customer/reviews", { method: "POST", body: JSON.stringify(payload) }, token);
+    },
+    async listReviews(token: string) {
+      return request<ProductReview[]>("/customer/reviews", {}, token);
+    },
+    async getReviewNotifications(token: string) {
+      return request<ReviewNotification>("/customer/notifications/reviews", {}, token);
+    },
+  },
+  orders: {
+    async list(token: string) {
+      return request<SellerOrder[]>("/orders", {}, token);
+    },
+    async get(orderId: string, token: string) {
+      return request<SellerOrder>(`/orders/${orderId}`, {}, token);
+    },
+    async updateTracking(orderId: string, tracking_reference: string | null, token: string) {
+      return request<SellerOrder>(
+        `/orders/${orderId}/tracking`,
+        { method: "PATCH", body: JSON.stringify({ tracking_reference }) },
+        token
+      );
+    },
+    async updateStatus(orderId: string, status: "processing" | "shipped" | "delivered", token: string) {
+      return request<SellerOrder>(`/orders/${orderId}/status`, { method: "PATCH", body: JSON.stringify({ status }) }, token);
+    },
+    async moderateReview(
+      reviewId: string,
+      payload: { moderation_status: "approved" | "rejected"; moderation_note?: string },
+      token: string
+    ) {
+      return request<ProductReview>(`/orders/reviews/${reviewId}`, { method: "PATCH", body: JSON.stringify(payload) }, token);
+    },
+    async listReviews(token: string, moderation_status?: "pending" | "approved" | "rejected") {
+      const suffix = moderation_status ? `?moderation_status=${moderation_status}` : "";
+      return request<ProductReview[]>(`/orders/reviews/list${suffix}`, {}, token);
     },
   },
 };
