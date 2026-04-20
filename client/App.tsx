@@ -38,6 +38,7 @@ import ProductFeatured from "./pages/dashboard/ProductFeatured";
 import Analytics from "./pages/dashboard/Analytics";
 import Settings from "./pages/dashboard/Settings";
 import Orders from "./pages/dashboard/Orders";
+import Reviews from "./pages/dashboard/Reviews";
 
 const queryClient = new QueryClient();
 
@@ -133,6 +134,14 @@ export default function App() {
                     element={
                       <ProtectedRoute>
                         <Orders />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/dashboard/reviews"
+                    element={
+                      <ProtectedRoute>
+                        <Reviews />
                       </ProtectedRoute>
                     }
                   />

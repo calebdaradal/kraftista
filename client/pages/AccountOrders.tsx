@@ -1,4 +1,5 @@
 import { Layout } from "@/components/layout/Layout";
+import { OrdersSlider } from "@/components/OrdersSlider";
 import { api, type CustomerOrder } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
@@ -56,29 +57,13 @@ export default function AccountOrders() {
               You have no orders yet.
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              <aside className="space-y-3 lg:col-span-1">
-                {orders.map((order) => (
-                  <button
-                    type="button"
-                    key={order.id}
-                    onClick={() => setSelectedOrderId(order.id)}
-                    className={`w-full rounded-xl border p-4 text-left transition-colors ${
-                      selectedOrderId === order.id ? "border-primary bg-primary/5" : "border-border bg-card hover:bg-muted/40"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-semibold text-foreground">Order #{order.id.slice(0, 8)}</p>
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{order.status}</span>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">{new Date(order.created_at).toLocaleString()}</p>
-                    <p className="mt-2 text-sm font-semibold text-foreground">{formatCurrency(order.total)}</p>
-                  </button>
-                ))}
-              </aside>
+            <div className="space-y-6">
+              {/* Orders Slider */}
+              <OrdersSlider orders={orders} selectedOrderId={selectedOrderId} onSelectOrder={setSelectedOrderId} />
 
-              <div className="rounded-xl border border-border bg-card p-4 sm:p-6 lg:col-span-2">
-                {!selectedOrder ? null : (
+              {/* Order Details Panel */}
+              {selectedOrder && (
+                <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
                   <div className="space-y-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <h2 className="font-semibold text-foreground">Order Details</h2>
@@ -123,20 +108,34 @@ export default function AccountOrders() {
                       <p className="mt-1 text-sm text-foreground">{selectedOrder.order_note || "No note provided."}</p>
                     </div>
 
-                    <div className="space-y-2">
-                      {selectedOrder.items.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                          <div>
-                            <p className="text-sm font-medium text-foreground">{item.product_name}</p>
-                            <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-semibold text-foreground">Order Items</h3>
+                      <div className="space-y-2">
+                        {selectedOrder.items.map((item) => (
+                          <div key={item.id} className="rounded-lg border border-border p-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-foreground">{item.product_name}</p>
+                                <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                                {item.selected_variations && Object.keys(item.selected_variations).length > 0 && (
+                                  <div className="mt-2 space-y-1 pt-2 border-t border-border">
+                                    {Object.entries(item.selected_variations).map(([key, value]) => (
+                                      <p key={key} className="text-xs text-muted-foreground">
+                                        <span className="font-medium">{key}:</span> {value}
+                                      </p>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              <p className="text-sm font-semibold text-foreground">{formatCurrency(item.line_total)}</p>
+                            </div>
                           </div>
-                          <p className="text-sm font-semibold text-foreground">{formatCurrency(item.line_total)}</p>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </div>

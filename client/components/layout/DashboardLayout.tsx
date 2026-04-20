@@ -13,6 +13,7 @@ import {
   User,
   ChevronDown,
   ChevronRight,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -84,6 +85,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       label: "Orders",
       href: "/dashboard/orders",
       icon: Truck,
+    },
+    {
+      label: "Reviews",
+      href: "/dashboard/reviews",
+      icon: MessageSquare,
     },
     {
       label: "Settings",
