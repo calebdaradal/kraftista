@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
+import { useSettings } from "@/context/SettingsContext";
 
 export function HeroSection() {
+  const { settings } = useSettings();
   return (
     <section className="relative py-20 md:py-32 overflow-hidden">
       {/* Background gradient */}
@@ -18,9 +20,12 @@ export function HeroSection() {
             </div>
 
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
-              Artisan-Made
-              <br />
-              <span className="text-primary">with Purpose</span>
+              {(settings.headline || "").split("\n").map((line, i) => (
+                <span key={i} className={i === 1 ? "text-primary" : undefined}>
+                  {line}
+                  <br />
+                </span>
+              ))}
             </h1>
 
             <p className="text-lg text-muted-foreground max-w-lg">

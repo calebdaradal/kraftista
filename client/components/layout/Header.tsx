@@ -6,6 +6,7 @@ import { useCart } from "@/context/CartContext";
 import { useUser } from "@/context/UserContext";
 import { CheckoutModal } from "@/components/CheckoutModal";
 import { api } from "@/lib/api";
+import { useSettings } from "@/context/SettingsContext";
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,6 +17,7 @@ export function Header() {
   const navigate = useNavigate();
   const { itemCount } = useCart();
   const { user, logout } = useUser();
+  const { settings } = useSettings();
 
   const navLinks = [
     { label: "Home", href: "/" },
@@ -77,11 +79,13 @@ export function Header() {
             className="flex items-center gap-2 group"
           >
             <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
-              <span className="text-white font-display text-lg font-bold">C</span>
+              <span className="text-white font-display text-lg font-bold">
+                {settings.logo || settings.siteName.charAt(0).toUpperCase()}
+              </span>
             </div>
             <div className="hidden sm:block">
               <div className="font-display font-bold text-lg text-foreground">
-                Craft
+                {settings.siteName}
               </div>
               <div className="text-xs text-muted-foreground">
                 Handmade Goods

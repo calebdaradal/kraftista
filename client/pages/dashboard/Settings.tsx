@@ -4,7 +4,7 @@ import { Save, Eye } from "lucide-react";
 import { useSettings } from "@/context/SettingsContext";
 
 export default function Settings() {
-  const { settings: globalSettings, updateSettings } = useSettings();
+  const { settings: globalSettings, updateSettings, uploadFavicon } = useSettings();
   const [settings, setSettings] = useState(globalSettings);
 
   const [activeTab, setActiveTab] = useState<
@@ -18,8 +18,8 @@ export default function Settings() {
     setSettings({ ...settings, [name]: value });
   };
 
-  const handleSave = () => {
-    updateSettings(settings);
+  const handleSave = async () => {
+    await updateSettings(settings);
     alert("Settings saved successfully!");
   };
 
@@ -164,6 +164,45 @@ export default function Settings() {
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Enter an emoji to use as your logo
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-foreground mb-2">
+                    Favicon
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="file"
+                      accept=".ico,.png,.jpg,.jpeg,.webp,.gif,.svg"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          const url = await uploadFavicon(file);
+                          setSettings((prev) => ({ ...prev, faviconUrl: url }));
+                          alert("Favicon uploaded!");
+                        } catch (err: any) {
+                          alert(err?.message || "Failed to upload favicon");
+                        } finally {
+                          e.currentTarget.value = "";
+                        }
+                      }}
+                      className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                    />
+                    {settings.faviconUrl ? (
+                      <a
+                        href={`http://127.0.0.1:8000${settings.faviconUrl}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm text-primary hover:underline whitespace-nowrap"
+                      >
+                        View
+                      </a>
+                    ) : null}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Upload a small icon for the browser tab (max 2MB).
                   </p>
                 </div>
 

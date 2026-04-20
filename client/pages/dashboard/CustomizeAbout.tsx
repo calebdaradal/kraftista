@@ -10,14 +10,14 @@ export default function CustomizeAbout() {
   const [formData, setFormData] = useState(about);
   const [activeTab, setActiveTab] = useState<"hero" | "values" | "milestones" | "team" | "preview">("hero");
 
-  const handleSave = () => {
-    updateAbout(formData);
+  const handleSave = async () => {
+    await updateAbout(formData);
     alert("About page customization saved!");
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (confirm("Are you sure you want to reset to defaults?")) {
-      resetAbout();
+      await resetAbout();
       setFormData(about);
     }
   };

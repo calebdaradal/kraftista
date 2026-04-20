@@ -1,8 +1,10 @@
 import { Layout } from "@/components/layout/Layout";
 import { Mail, Phone, MapPin, Clock } from "lucide-react";
 import { useState } from "react";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function Contact() {
+  const { settings } = useSettings();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -22,19 +24,19 @@ export default function Contact() {
     {
       icon: Mail,
       title: "Email",
-      value: "hello@craft.com",
-      href: "mailto:hello@craft.com",
+      value: settings.email,
+      href: `mailto:${settings.email}`,
     },
     {
       icon: Phone,
       title: "Phone",
-      value: "+1 (555) 123-4567",
-      href: "tel:+15551234567",
+      value: settings.phone,
+      href: `tel:${settings.phone.replace(/[^\d+]/g, "")}`,
     },
     {
       icon: MapPin,
       title: "Location",
-      value: "123 Artisan Street, Portland, OR 97201",
+      value: settings.address,
       href: "#",
     },
     {

@@ -1,4 +1,5 @@
 import type { Product } from "@/types/product";
+import type { AboutCustomization, FooterCustomization } from "@shared/customization";
 
 const defaultApiBase =
   typeof window === "undefined"
@@ -431,6 +432,39 @@ export const api = {
     async listReviews(token: string, moderation_status?: "pending" | "approved" | "rejected") {
       const suffix = moderation_status ? `?moderation_status=${moderation_status}` : "";
       return request<ProductReview[]>(`/orders/reviews/list${suffix}`, {}, token);
+    },
+  },
+  customization: {
+    async get() {
+      return request<{ about: AboutCustomization | null; footer: FooterCustomization | null }>("/customization");
+    },
+    async updateAbout(payload: AboutCustomization, token: string) {
+      await request<void>("/customization/about", { method: "PUT", body: JSON.stringify({ data: payload }) }, token);
+    },
+    async updateFooter(payload: FooterCustomization, token: string) {
+      await request<void>("/customization/footer", { method: "PUT", body: JSON.stringify({ data: payload }) }, token);
+    },
+  },
+  settings: {
+    async get() {
+      return request<{ data: any | null }>("/settings");
+    },
+    async update(payload: any, token: string) {
+      await request<void>("/settings", { method: "PUT", body: JSON.stringify({ data: payload }) }, token);
+    },
+    async uploadFavicon(file: File, token: string) {
+      const form = new FormData();
+      form.append("file", file);
+      const response = await fetch(`${API_BASE}/settings/favicon`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: form,
+      });
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || `Request failed (${response.status})`);
+      }
+      return (await response.json()) as { favicon_url: string };
     },
   },
 };

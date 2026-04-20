@@ -9,14 +9,14 @@ export default function CustomizeFooter() {
   const [formData, setFormData] = useState(footer);
   const [activeTab, setActiveTab] = useState<"brand" | "sections" | "social" | "bottom">("brand");
 
-  const handleSave = () => {
-    updateFooter(formData);
+  const handleSave = async () => {
+    await updateFooter(formData);
     alert("Footer customization saved!");
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (confirm("Are you sure you want to reset to defaults?")) {
-      resetFooter();
+      await resetFooter();
       setFormData(footer);
     }
   };

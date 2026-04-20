@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ChevronRight,
   MessageSquare,
+  Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +30,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   sidebarOpenRef.current = sidebarOpen;
   const location = useLocation();
   const { user, logout } = useAuth();
-  const [productsOpen, setProductsOpen] = useState(() => location.pathname.startsWith("/dashboard/products"));
+  const [sectionsOpen, setSectionsOpen] = useState(() => ({
+    products: location.pathname.startsWith("/dashboard/products"),
+    customize: location.pathname.startsWith("/dashboard/customize"),
+  }));
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -38,7 +42,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   useEffect(() => {
     if (location.pathname.startsWith("/dashboard/products")) {
-      setProductsOpen(true);
+      setSectionsOpen((prev) => ({ ...prev, products: true }));
+    }
+    if (location.pathname.startsWith("/dashboard/customize")) {
+      setSectionsOpen((prev) => ({ ...prev, customize: true }));
     }
   }, [location.pathname]);
 
@@ -94,7 +101,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     {
       label: "Customize",
       href: "/dashboard/customize",
-      icon: Settings,
+      icon: Palette,
       children: [
         { label: "About Page", href: "/dashboard/customize/about" },
         { label: "Footer", href: "/dashboard/customize/footer" },
@@ -109,6 +116,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const isActive = (href: string) => location.pathname === href;
   const isProductsSection = location.pathname.startsWith("/dashboard/products");
+  const isCustomizeSection = location.pathname.startsWith("/dashboard/customize");
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -154,14 +162,30 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const active = item.children ? isProductsSection : isActive(item.href);
+            const active = item.children
+              ? item.href === "/dashboard/products"
+                ? isProductsSection
+                : item.href === "/dashboard/customize"
+                  ? isCustomizeSection
+                  : isActive(item.href)
+              : isActive(item.href);
             const hasChildren = Boolean(item.children?.length);
+            const sectionKey =
+              item.href === "/dashboard/products"
+                ? "products"
+                : item.href === "/dashboard/customize"
+                  ? "customize"
+                  : null;
+            const isOpen = sectionKey ? sectionsOpen[sectionKey] : false;
             return (
               <div key={item.href} className="space-y-1">
                 {hasChildren ? (
                   <button
                     type="button"
-                    onClick={() => setProductsOpen((prev) => !prev)}
+                    onClick={() => {
+                      if (!sectionKey) return;
+                      setSectionsOpen((prev) => ({ ...prev, [sectionKey]: !prev[sectionKey] }));
+                    }}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors",
                       active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
@@ -173,7 +197,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       <>
                         <span className="font-medium">{item.label}</span>
                         <span className="ml-auto">
-                          {productsOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                          {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                         </span>
                       </>
                     )}
@@ -194,7 +218,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     {sidebarOpen && <span className="font-medium">{item.label}</span>}
                   </Link>
                 )}
-                {hasChildren && productsOpen && sidebarOpen && (
+                {hasChildren && isOpen && sidebarOpen && (
                   <div className="ml-8 space-y-1">
                     {item.children!.map((child) => (
                       <Link

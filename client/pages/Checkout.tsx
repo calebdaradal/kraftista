@@ -108,7 +108,7 @@ export default function Checkout() {
           // TODO[TEMP_PAYMENT_BYPASS_REMOVE_BEFORE_LIVE]:
           // Marker kept in backend data only; remove when real payment is integrated.
           payment_method: TEMP_PAYMENT_BYPASS_ENABLED ? "manual_test_bypass" : "card",
-          order_note,
+          order_note: orderNote.trim() || null,
           shipping_address: shippingAddress,
         },
         token
