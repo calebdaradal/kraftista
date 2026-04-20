@@ -92,6 +92,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       icon: MessageSquare,
     },
     {
+      label: "Customize",
+      href: "/dashboard/customize",
+      icon: Settings,
+      children: [
+        { label: "About Page", href: "/dashboard/customize/about" },
+        { label: "Footer", href: "/dashboard/customize/footer" },
+      ],
+    },
+    {
       label: "Settings",
       href: "/dashboard/settings",
       icon: Settings,
