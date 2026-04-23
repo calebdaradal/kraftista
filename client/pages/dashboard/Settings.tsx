@@ -9,12 +9,12 @@ export default function Settings() {
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const DEFAULT_PRIMARY = "#c46c1a";
   const DEFAULT_SECONDARY = "#d4a574";
-  const assetBase =
+  const apiBase =
     typeof window === "undefined"
-      ? "http://127.0.0.1:8000"
-      : import.meta.env.DEV
-        ? "http://127.0.0.1:8000"
-        : window.location.origin;
+      ? "http://127.0.0.1:8000/api"
+      : import.meta.env.VITE_API_URL ||
+        (import.meta.env.DEV ? "http://127.0.0.1:8000/api" : `${window.location.origin}/api`);
+  const assetBase = apiBase.replace(/\/api\/?$/, "");
   const resolveAssetUrl = (path?: string) => {
     if (!path) return "";
     if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("data:")) return path;
@@ -420,7 +420,7 @@ export default function Settings() {
                   <img
                     src={resolveAssetUrl(settings.logoUrl)}
                     alt={`${settings.siteName} logo`}
-                    className="h-16 w-16 rounded-lg border border-border object-contain"
+                    className="max-h-16 w-auto max-w-full object-contain"
                   />
                 ) : (
                   <div className="text-4xl">{settings.logo}</div>

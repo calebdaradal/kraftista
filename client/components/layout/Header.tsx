@@ -14,12 +14,12 @@ export function Header() {
     if (assetPath.startsWith("http://") || assetPath.startsWith("https://") || assetPath.startsWith("data:")) {
       return assetPath;
     }
-    const base =
+    const apiBase =
       typeof window === "undefined"
-        ? "http://127.0.0.1:8000"
-        : import.meta.env.DEV
-          ? "http://127.0.0.1:8000"
-          : window.location.origin;
+        ? "http://127.0.0.1:8000/api"
+        : import.meta.env.VITE_API_URL ||
+          (import.meta.env.DEV ? "http://127.0.0.1:8000/api" : `${window.location.origin}/api`);
+    const base = apiBase.replace(/\/api\/?$/, "");
     return `${base}${assetPath.startsWith("/") ? "" : "/"}${assetPath}`;
   };
   const [isOpen, setIsOpen] = useState(false);
@@ -95,7 +95,7 @@ export function Header() {
               <img
                 src={resolveAssetUrl(settings.logoUrl)}
                 alt={`${settings.siteName} logo`}
-                className="h-10 w-10 rounded-lg object-contain"
+                className="max-h-10 w-auto max-w-[9rem] object-contain flex-shrink-0"
               />
             ) : (
               <div className="w-10 h-10 rounded-lg flex items-center justify-center border border-border text-lg font-display font-bold text-foreground">

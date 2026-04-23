@@ -86,7 +86,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     const applyFavicon = (href?: string) => {
       if (!href) return;
       const absoluteHref = toAssetUrl(href);
-      const cacheBustedHref = `${absoluteHref}${absoluteHref.includes("?") ? "&" : "?"}v=${Date.now()}`;
       const rels = ["icon", "shortcut icon", "apple-touch-icon"];
       for (const rel of rels) {
         let link = document.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
@@ -95,7 +94,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           link.rel = rel;
           document.head.appendChild(link);
         }
-        link.href = cacheBustedHref;
+        link.href = absoluteHref;
       }
     };
 
