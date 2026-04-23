@@ -5,9 +5,9 @@ import { useSettings } from "@/context/SettingsContext";
 export function HeroSection() {
   const { settings } = useSettings();
   return (
-    <section className="relative py-20 md:py-32 overflow-hidden">
+    <section className="relative min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-5rem)] flex items-center overflow-hidden">
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-primary/10 rounded-3xl mx-4 md:mx-12"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-primary/10"></div>
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">

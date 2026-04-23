@@ -9,6 +9,19 @@ import { api } from "@/lib/api";
 import { useSettings } from "@/context/SettingsContext";
 
 export function Header() {
+  const resolveAssetUrl = (assetPath?: string) => {
+    if (!assetPath) return "";
+    if (assetPath.startsWith("http://") || assetPath.startsWith("https://") || assetPath.startsWith("data:")) {
+      return assetPath;
+    }
+    const base =
+      typeof window === "undefined"
+        ? "http://127.0.0.1:8000"
+        : import.meta.env.DEV
+          ? "http://127.0.0.1:8000"
+          : window.location.origin;
+    return `${base}${assetPath.startsWith("/") ? "" : "/"}${assetPath}`;
+  };
   const [isOpen, setIsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -78,11 +91,17 @@ export function Header() {
             to="/"
             className="flex items-center gap-2 group"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
-              <span className="text-white font-display text-lg font-bold">
+            {settings.logoUrl ? (
+              <img
+                src={resolveAssetUrl(settings.logoUrl)}
+                alt={`${settings.siteName} logo`}
+                className="h-10 w-10 rounded-lg object-contain"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center border border-border text-lg font-display font-bold text-foreground">
                 {settings.logo || settings.siteName.charAt(0).toUpperCase()}
-              </span>
-            </div>
+              </div>
+            )}
             <div className="hidden sm:block">
               <div className="font-display font-bold text-lg text-foreground">
                 {settings.siteName}

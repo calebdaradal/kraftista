@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { useCustomization } from "@/context/CustomizationContext";
+import { useSettings } from "@/context/SettingsContext";
 import * as Icons from "lucide-react";
 
 function getIconComponent(iconName: string) {
@@ -10,6 +11,7 @@ function getIconComponent(iconName: string) {
 
 export function AboutPreview() {
   const { about } = useCustomization();
+  const { settings } = useSettings();
   
   // Use first 3 values for preview
   const previewValues = about.values.slice(0, 3);
@@ -35,7 +37,7 @@ export function AboutPreview() {
           <div className="space-y-8">
             <div>
               <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-                About Craft
+                About {settings.siteName || "Craft"}
               </h2>
               <p className="text-lg text-muted-foreground mb-4">
                 {about.heroSubtitle.split('\n')[0]}

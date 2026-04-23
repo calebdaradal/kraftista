@@ -11,6 +11,7 @@ export interface SiteSettings {
   primaryColor: string;
   secondaryColor: string;
   logo: string;
+  logoUrl?: string;
   featuredProductIds: string[];
   faviconUrl?: string;
 }
@@ -19,6 +20,7 @@ interface SettingsContextType {
   settings: SiteSettings;
   updateSettings: (newSettings: Partial<SiteSettings>) => Promise<void>;
   uploadFavicon: (file: File) => Promise<string>;
+  uploadLogo: (file: File) => Promise<string>;
 }
 
 const defaultSettings: SiteSettings = {
@@ -32,6 +34,22 @@ const defaultSettings: SiteSettings = {
   secondaryColor: "#d4a574",
   logo: "🏺",
   featuredProductIds: ["1", "2", "3", "4"],
+};
+
+const apiBase =
+  typeof window === "undefined"
+    ? "http://127.0.0.1:8000/api"
+    : import.meta.env.DEV
+      ? "http://127.0.0.1:8000/api"
+      : `${window.location.origin}/api`;
+const apiOrigin = apiBase.replace(/\/api\/?$/, "");
+
+const toAssetUrl = (assetPath?: string) => {
+  if (!assetPath) return "";
+  if (assetPath.startsWith("http://") || assetPath.startsWith("https://") || assetPath.startsWith("data:")) {
+    return assetPath;
+  }
+  return `${apiOrigin}${assetPath.startsWith("/") ? "" : "/"}${assetPath}`;
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -63,22 +81,22 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    document.title = settings.siteName || "Craft";
+    document.title = settings.siteName || defaultSettings.siteName;
 
     const applyFavicon = (href?: string) => {
       if (!href) return;
-      const absoluteHref = href.startsWith("http")
-        ? href
-        : href.startsWith("/")
-          ? `http://127.0.0.1:8000${href}`
-          : href;
-      let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-      if (!link) {
-        link = document.createElement("link");
-        link.rel = "icon";
-        document.head.appendChild(link);
+      const absoluteHref = toAssetUrl(href);
+      const cacheBustedHref = `${absoluteHref}${absoluteHref.includes("?") ? "&" : "?"}v=${Date.now()}`;
+      const rels = ["icon", "shortcut icon", "apple-touch-icon"];
+      for (const rel of rels) {
+        let link = document.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
+        if (!link) {
+          link = document.createElement("link");
+          link.rel = rel;
+          document.head.appendChild(link);
+        }
+        link.href = cacheBustedHref;
       }
-      link.href = `${absoluteHref}${absoluteHref.includes("?") ? "&" : "?"}v=${Date.now()}`;
     };
 
     applyFavicon(settings.faviconUrl);
@@ -156,8 +174,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     return res.favicon_url;
   };
 
+  const uploadLogo = async (file: File) => {
+    const token = localStorage.getItem("craft_auth_token");
+    if (!token) throw new Error("Not authenticated");
+    const res = await api.settings.uploadLogo(file, token);
+    await updateSettings({ logoUrl: res.logo_url });
+    return res.logo_url;
+  };
+
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, uploadFavicon }}>
+    <SettingsContext.Provider value={{ settings, updateSettings, uploadFavicon, uploadLogo }}>
       {children}
     </SettingsContext.Provider>
   );

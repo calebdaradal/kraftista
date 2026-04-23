@@ -90,7 +90,7 @@ export default function Shop() {
                 className="group bg-card rounded-xl overflow-hidden border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg flex flex-col h-full"
               >
                 {/* Product Image */}
-                <div className="relative h-64 bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center overflow-hidden group-hover:bg-primary/20 transition-colors">
+                <div className="relative h-64 bg-transparent flex items-center justify-center overflow-hidden">
                   {isImageSource(product.image) ? (
                     <img
                       src={product.image}

@@ -4,11 +4,13 @@ import { BarChart3, Package, Users, TrendingUp, DollarSign, Loader2 } from "luci
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import type { Product } from "@/types/product";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function Dashboard() {
   const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const { settings } = useSettings();
   useEffect(() => {
     api.products
       .list()
@@ -55,7 +57,7 @@ export default function Dashboard() {
             Dashboard
           </h1>
           <p className="text-sm text-muted-foreground sm:text-base">
-            Welcome to your Craft admin dashboard
+            Welcome to your {settings.siteName || "Craft"} admin dashboard
           </p>
         </div>
 

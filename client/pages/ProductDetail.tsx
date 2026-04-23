@@ -298,7 +298,7 @@ export default function ProductDetail() {
           <div className="grid grid-cols-1 items-start md:grid-cols-2 gap-8 md:gap-12 mb-12">
             {/* Product gallery — main image + thumbnail strip with arrows */}
             <div className="flex w-full max-w-xl flex-col gap-3 md:sticky md:top-24 md:z-10 md:self-start">
-              <div className="relative flex aspect-square w-full items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-secondary/10">
+              <div className="relative flex aspect-square w-full items-center justify-center rounded-2xl bg-transparent">
                 <ProductSlideContent src={activeSlideSrc} variant="main" />
                 {product.originalPrice && (
                   <div className="absolute top-4 right-4 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-bold">
@@ -890,7 +890,7 @@ export default function ProductDetail() {
                     to={`/product/${relatedProduct.id}`}
                     className="group bg-card rounded-xl overflow-hidden border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg"
                   >
-                    <div className="relative h-64 bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center overflow-hidden group-hover:bg-primary/20 transition-colors">
+                    <div className="relative h-64 bg-transparent flex items-center justify-center overflow-hidden">
                       {isImageSource(relatedProduct.image) ? (
                         <img
                           src={relatedProduct.image}

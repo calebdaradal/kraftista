@@ -1,11 +1,29 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Save, Eye } from "lucide-react";
 import { useSettings } from "@/context/SettingsContext";
 
 export default function Settings() {
-  const { settings: globalSettings, updateSettings, uploadFavicon } = useSettings();
+  const { settings: globalSettings, updateSettings, uploadFavicon, uploadLogo } = useSettings();
   const [settings, setSettings] = useState(globalSettings);
+  const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+  const DEFAULT_PRIMARY = "#c46c1a";
+  const DEFAULT_SECONDARY = "#d4a574";
+  const assetBase =
+    typeof window === "undefined"
+      ? "http://127.0.0.1:8000"
+      : import.meta.env.DEV
+        ? "http://127.0.0.1:8000"
+        : window.location.origin;
+  const resolveAssetUrl = (path?: string) => {
+    if (!path) return "";
+    if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("data:")) return path;
+    return `${assetBase}${path.startsWith("/") ? "" : "/"}${path}`;
+  };
+
+  useEffect(() => {
+    setSettings(globalSettings);
+  }, [globalSettings]);
 
   const [activeTab, setActiveTab] = useState<
     "general" | "branding" | "content" | "colors"
@@ -19,7 +37,14 @@ export default function Settings() {
   };
 
   const handleSave = async () => {
-    await updateSettings(settings);
+    const nextSettings = { ...settings };
+    if (pendingLogoFile) {
+      const logoUrl = await uploadLogo(pendingLogoFile);
+      nextSettings.logoUrl = logoUrl;
+      setPendingLogoFile(null);
+    }
+    await updateSettings(nextSettings);
+    setSettings(nextSettings);
     alert("Settings saved successfully!");
   };
 
@@ -152,19 +177,38 @@ export default function Settings() {
 
                 <div>
                   <label className="block text-sm font-semibold text-foreground mb-2">
-                    Logo/Icon
+                    Logo
                   </label>
-                  <input
-                    type="text"
-                    name="logo"
-                    value={settings.logo}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary text-center text-3xl"
-                    maxLength={2}
-                  />
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="file"
+                      accept=".png,.jpg,.jpeg,.webp,.gif,.svg"
+                      onChange={(e) => {
+                        const inputEl = e.currentTarget;
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setPendingLogoFile(file);
+                        inputEl.value = "";
+                      }}
+                      className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                    />
+                    {settings.logoUrl ? (
+                      <a
+                        href={resolveAssetUrl(settings.logoUrl)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm text-primary hover:underline whitespace-nowrap"
+                      >
+                        View
+                      </a>
+                    ) : null}
+                  </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Enter an emoji to use as your logo
+                    Upload a square logo image (1:1 ratio). File is uploaded when you click Save Settings.
                   </p>
+                  {pendingLogoFile ? (
+                    <p className="text-xs text-primary mt-1">Selected: {pendingLogoFile.name}</p>
+                  ) : null}
                 </div>
 
                 <div>
@@ -176,6 +220,7 @@ export default function Settings() {
                       type="file"
                       accept=".ico,.png,.jpg,.jpeg,.webp,.gif,.svg"
                       onChange={async (e) => {
+                        const inputEl = e.currentTarget;
                         const file = e.target.files?.[0];
                         if (!file) return;
                         try {
@@ -185,14 +230,14 @@ export default function Settings() {
                         } catch (err: any) {
                           alert(err?.message || "Failed to upload favicon");
                         } finally {
-                          e.currentTarget.value = "";
+                          inputEl.value = "";
                         }
                       }}
                       className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                     />
                     {settings.faviconUrl ? (
                       <a
-                        href={`http://127.0.0.1:8000${settings.faviconUrl}`}
+                        href={resolveAssetUrl(settings.faviconUrl)}
                         target="_blank"
                         rel="noreferrer"
                         className="text-sm text-primary hover:underline whitespace-nowrap"
@@ -299,6 +344,21 @@ export default function Settings() {
                     </div>
                   </div>
                 </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSettings((prev) => ({
+                        ...prev,
+                        primaryColor: DEFAULT_PRIMARY,
+                        secondaryColor: DEFAULT_SECONDARY,
+                      }))
+                    }
+                    className="px-4 py-2 border border-border rounded-lg text-sm font-semibold text-foreground hover:bg-muted transition-colors"
+                  >
+                    Revert to Default Colors
+                  </button>
+                </div>
 
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-900">
@@ -356,7 +416,15 @@ export default function Settings() {
                 <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">
                   Logo
                 </p>
-                <div className="text-4xl">{settings.logo}</div>
+                {settings.logoUrl ? (
+                  <img
+                    src={resolveAssetUrl(settings.logoUrl)}
+                    alt={`${settings.siteName} logo`}
+                    className="h-16 w-16 rounded-lg border border-border object-contain"
+                  />
+                ) : (
+                  <div className="text-4xl">{settings.logo}</div>
+                )}
               </div>
 
               <div className="border-t border-border pt-4">

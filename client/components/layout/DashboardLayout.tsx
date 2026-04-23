@@ -17,6 +17,7 @@ import {
   Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSettings } from "@/context/SettingsContext";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -30,6 +31,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   sidebarOpenRef.current = sidebarOpen;
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { settings } = useSettings();
   const [sectionsOpen, setSectionsOpen] = useState(() => ({
     products: location.pathname.startsWith("/dashboard/products"),
     customize: location.pathname.startsWith("/dashboard/customize"),
@@ -150,7 +152,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             {sidebarOpen && (
               <div>
                 <div className="font-display font-bold text-foreground text-sm">
-                  Craft
+                  {settings.siteName || "Craft"}
                 </div>
                 <div className="text-xs text-muted-foreground">Admin</div>
               </div>

@@ -8,6 +8,26 @@ const defaultApiBase =
       ? "http://127.0.0.1:8000/api"
       : `${window.location.origin}/api`;
 const API_BASE = (import.meta.env.VITE_API_URL || defaultApiBase).replace(/\/$/, "");
+const buildApiCandidates = (path: string): string[] => {
+  const candidates: string[] = [];
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const pushUnique = (value: string) => {
+    if (!candidates.includes(value)) candidates.push(value);
+  };
+
+  pushUnique(`${API_BASE}${normalizedPath}`);
+
+  if (/\/api$/i.test(API_BASE)) {
+    // If base already ends with /api, also try stripped base for deployments
+    // where a reverse proxy already injects/removes the /api prefix.
+    pushUnique(`${API_BASE.replace(/\/api$/i, "")}${normalizedPath}`);
+  } else {
+    // If base does not end with /api, also try the /api-prefixed variant.
+    pushUnique(`${API_BASE}/api${normalizedPath}`);
+  }
+
+  return candidates;
+};
 
 type UserRole = "customer" | "admin" | "editor";
 
@@ -455,16 +475,48 @@ export const api = {
     async uploadFavicon(file: File, token: string) {
       const form = new FormData();
       form.append("file", file);
-      const response = await fetch(`${API_BASE}/settings/favicon`, {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        body: form,
-      });
-      if (!response.ok) {
-        const message = await response.text();
-        throw new Error(message || `Request failed (${response.status})`);
+      const endpoints = buildApiCandidates("/settings/favicon");
+      let lastErrorMessage = "Request failed";
+      let lastStatus = 500;
+      for (const endpoint of endpoints) {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          body: form,
+        });
+        if (response.ok) {
+          return (await response.json()) as { favicon_url: string };
+        }
+        lastStatus = response.status;
+        lastErrorMessage = await response.text();
+        if (response.status !== 404) {
+          throw new Error(lastErrorMessage || `Request failed (${response.status})`);
+        }
       }
-      return (await response.json()) as { favicon_url: string };
+      throw new Error(lastErrorMessage || `Request failed (${lastStatus})`);
+    },
+    async uploadLogo(file: File, token: string) {
+      const form = new FormData();
+      form.append("file", file);
+      const endpoints = buildApiCandidates("/settings/logo");
+      let lastErrorMessage = "Request failed";
+      let lastStatus = 500;
+      for (const endpoint of endpoints) {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          body: form,
+        });
+        if (response.ok) {
+          return (await response.json()) as { logo_url: string };
+        }
+        lastStatus = response.status;
+        lastErrorMessage = await response.text();
+        if (response.status !== 404) {
+          throw new Error(lastErrorMessage || `Request failed (${response.status})`);
+        }
+      }
+      throw new Error(lastErrorMessage || `Request failed (${lastStatus})`);
     },
   },
 };
