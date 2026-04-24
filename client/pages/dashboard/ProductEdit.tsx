@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import type { Product } from "@/types/product";
+import { toast } from "sonner";
 
 function mergeProductWithTiers(p: Product | null): Product {
   const tiers = EMPTY_TIER_VARIATIONS;
@@ -180,7 +181,7 @@ export default function ProductEdit() {
     if (isSaving) return;
     const token = localStorage.getItem("craft_auth_token");
     if (!token) {
-      alert("Please login again.");
+      toast.error("Session expired. Please log in again.");
       return;
     }
     try {
@@ -192,9 +193,10 @@ export default function ProductEdit() {
       } else {
         throw new Error("Missing product id for update.");
       }
+      toast.success(isNew ? "Product created." : "Product saved.");
       navigate("/dashboard/products");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to save product");
+      toast.error(err instanceof Error ? err.message : "Failed to save product");
     } finally {
       setIsSaving(false);
     }

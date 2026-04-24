@@ -5,6 +5,8 @@ import { Search, Plus, Trash2, Edit, ChevronDown, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Product } from "@/types/product";
 import type { TaxonomyItem } from "@/lib/api";
+import { ConfirmModal } from "@/components/ConfirmModal";
+import { toast } from "sonner";
 
 export default function Products() {
   const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
@@ -17,6 +19,7 @@ export default function Products() {
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   useEffect(() => {
     api.products
@@ -54,19 +57,27 @@ export default function Products() {
     });
 
   const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this product?")) {
-      const token = localStorage.getItem("craft_auth_token");
-      if (!token) {
-        navigate("/login");
-        return;
-      }
-      setDeletingProductId(id);
-      api.products
-        .remove(id, token)
-        .then(() => setProducts((prev) => prev.filter((p) => p.id !== id)))
-        .catch((err) => alert(err.message || "Failed to delete product"))
-        .finally(() => setDeletingProductId(null));
+    setDeleteConfirm(id);
+  };
+
+  const confirmDelete = () => {
+    if (!deleteConfirm) return;
+    const id = deleteConfirm;
+    setDeleteConfirm(null);
+    const token = localStorage.getItem("craft_auth_token");
+    if (!token) {
+      navigate("/login");
+      return;
     }
+    setDeletingProductId(id);
+    api.products
+      .remove(id, token)
+      .then(() => {
+        setProducts((prev) => prev.filter((p) => p.id !== id));
+        toast.success("Product deleted.");
+      })
+      .catch((err) => toast.error(err.message || "Failed to delete product"))
+      .finally(() => setDeletingProductId(null));
   };
 
   return (
@@ -392,6 +403,16 @@ export default function Products() {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        open={!!deleteConfirm}
+        title="Delete product"
+        message="This will permanently remove the product. This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </DashboardLayout>
   );
 }

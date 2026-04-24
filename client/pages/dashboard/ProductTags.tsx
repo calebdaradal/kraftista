@@ -2,6 +2,8 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { api, type TaxonomyItem } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { ConfirmModal } from "@/components/ConfirmModal";
+import { toast } from "sonner";
 
 export default function ProductTags() {
   const [tags, setTags] = useState<TaxonomyItem[]>([]);
@@ -11,6 +13,7 @@ export default function ProductTags() {
   const [isLoadingList, setIsLoadingList] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; message: string } | null>(null);
 
   const token = localStorage.getItem("craft_auth_token") || "";
 
@@ -58,14 +61,23 @@ export default function ProductTags() {
   const handleDelete = async (id: string, tagName: string) => {
     if (!token) return;
     const impact = await api.products.getTagImpact(id, token);
-    const confirmed = window.confirm(
-      `${impact.product_count} products are currently using "${tagName}". Delete this tag and remove it from those products?`
-    );
-    if (!confirmed) return;
+    setDeleteConfirm({
+      id,
+      message: `${impact.product_count} product${impact.product_count !== 1 ? "s" : ""} ${impact.product_count === 1 ? "is" : "are"} using "${tagName}". Delete this tag and remove it from those products?`,
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+    const { id } = deleteConfirm;
+    setDeleteConfirm(null);
     try {
       setPendingActionId(id);
       await api.products.deleteTag(id, token);
+      toast.success("Tag deleted.");
       await loadTags();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete tag.");
     } finally {
       setPendingActionId(null);
     }
@@ -204,6 +216,16 @@ export default function ProductTags() {
           </table>
         </div>
       </div>
+
+      <ConfirmModal
+        open={!!deleteConfirm}
+        title="Delete tag"
+        message={deleteConfirm?.message ?? ""}
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </DashboardLayout>
   );
 }

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { SiteLogo } from "@/components/SiteLogo";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -10,6 +12,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
+  const { settings } = useSettings();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,21 +31,18 @@ export default function Login() {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
-              <span className="text-white font-display text-xl font-bold">C</span>
-            </div>
-            <div>
-              <div className="font-display font-bold text-lg text-foreground">
-                Craft
-              </div>
-            </div>
-          </Link>
+          <div className="inline-flex justify-center mb-6">
+            <SiteLogo
+              label={settings.siteName}
+              wideImgClass="max-h-12 w-auto max-w-[14rem]"
+              squareImgClass="w-12 h-12"
+            />
+          </div>
           <h1 className="font-display text-3xl font-bold text-foreground mb-2">
             Welcome Back
           </h1>
           <p className="text-muted-foreground">
-            Sign in to your Craft dashboard
+            Sign in to your {settings.siteName} dashboard
           </p>
         </div>
 

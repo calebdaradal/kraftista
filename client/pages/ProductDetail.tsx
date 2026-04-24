@@ -25,6 +25,7 @@ import { useUser } from "@/context/UserContext";
 import { cn } from "@/lib/utils";
 import { api, type PublicReview } from "@/lib/api";
 import type { Product } from "@/types/product";
+import { toast } from "sonner";
 
 function ProductSlideContent({ src, variant }: { src: string; variant: "main" | "thumb" }) {
   const t = src.trim();
@@ -323,8 +324,7 @@ export default function ProductDetail() {
       name: product.name,
     });
 
-    // Show success feedback
-    alert("Product added to cart!");
+    toast.success("Added to cart!", { description: product.name });
     setQuantity(1);
     setSelectedVariations({});
   };
@@ -496,7 +496,8 @@ export default function ProductDetail() {
                             const name = product.primaryVariation!.collectionName;
                             const selected = selectedVariations[name] === option.label;
                             const raw = option.image?.trim();
-                            const hasUploadedImage = Boolean(raw?.startsWith("data:"));
+                            // Accept both data-URLs and signed https:// URLs from Supabase
+                            const hasUploadedImage = Boolean(raw && isImageSource(raw));
                             const hasVisual = Boolean(raw);
 
                             return hasVisual ? (
