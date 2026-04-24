@@ -16,8 +16,10 @@ const sanitizeCartImage = (image: string) => {
   if (!image) return null;
   const trimmed = image.trim();
   if (!trimmed) return null;
-  // Backend cart_items.image_url is VARCHAR(512); avoid pushing huge data URLs.
-  return trimmed.length > 512 ? null : trimmed;
+  // Only reject base64 data-URLs — they are too large for the DB.
+  // Signed Supabase https:// URLs can exceed 512 chars and must be kept as-is.
+  if (trimmed.startsWith("data:")) return null;
+  return trimmed;
 };
 
 export default function Checkout() {
