@@ -42,6 +42,7 @@ import Orders from "./pages/dashboard/Orders";
 import Reviews from "./pages/dashboard/Reviews";
 import CustomizeAbout from "./pages/dashboard/CustomizeAbout";
 import CustomizeFooter from "./pages/dashboard/CustomizeFooter";
+import CustomizeHero from "./pages/dashboard/CustomizeHero";
 
 const queryClient = new QueryClient();
 
@@ -55,7 +56,7 @@ export default function App() {
               <CustomizationProvider>
                 <TooltipProvider>
                   <Toaster />
-                  <Sonner />
+                  <Sonner position="bottom-right" richColors closeButton />
                   <BrowserRouter>
                     <Routes>
                       {/* Public Routes */}
@@ -178,6 +179,14 @@ export default function App() {
                         element={
                           <ProtectedRoute>
                             <CustomizeFooter />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/dashboard/customize/hero"
+                        element={
+                          <ProtectedRoute>
+                            <CustomizeHero />
                           </ProtectedRoute>
                         }
                       />

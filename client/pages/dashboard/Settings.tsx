@@ -1,14 +1,28 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { useEffect, useState } from "react";
-import { Save, Eye } from "lucide-react";
+import { Save, Undo2, Loader2 } from "lucide-react";
 import { useSettings } from "@/context/SettingsContext";
+import { toast } from "sonner";
 
 export default function Settings() {
-  const { settings: globalSettings, updateSettings, uploadFavicon, uploadLogo } = useSettings();
+  const { settings: globalSettings, updateSettings, uploadFavicon, uploadLogo, undoLogo, undoFavicon } = useSettings();
   const [settings, setSettings] = useState(globalSettings);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+
+  const [saving, setSaving] = useState(false);
+  const [uploadingFavicon, setUploadingFavicon] = useState(false);
+  const [undoingLogo, setUndoingLogo] = useState(false);
+  const [undoingFavicon, setUndoingFavicon] = useState(false);
+
+  const [confirmReset, setConfirmReset] = useState<{ open: boolean; type: "logo" | "favicon" | null }>({
+    open: false,
+    type: null,
+  });
+
   const DEFAULT_PRIMARY = "#c46c1a";
   const DEFAULT_SECONDARY = "#d4a574";
+
   const apiBase =
     typeof window === "undefined"
       ? "http://127.0.0.1:8000/api"
@@ -25,27 +39,69 @@ export default function Settings() {
     setSettings(globalSettings);
   }, [globalSettings]);
 
-  const [activeTab, setActiveTab] = useState<
-    "general" | "branding" | "content" | "colors"
-  >("general");
+  const [activeTab, setActiveTab] = useState<"general" | "branding" | "content" | "colors">("general");
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setSettings({ ...settings, [name]: value });
   };
 
   const handleSave = async () => {
-    const nextSettings = { ...settings };
-    if (pendingLogoFile) {
-      const logoUrl = await uploadLogo(pendingLogoFile);
-      nextSettings.logoUrl = logoUrl;
-      setPendingLogoFile(null);
+    setSaving(true);
+    try {
+      const nextSettings = { ...settings };
+      if (pendingLogoFile) {
+        const logoUrl = await uploadLogo(pendingLogoFile);
+        nextSettings.logoUrl = logoUrl;
+        setPendingLogoFile(null);
+      }
+      await updateSettings(nextSettings);
+      setSettings(nextSettings);
+      toast.success("Settings saved successfully!");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save settings.");
+    } finally {
+      setSaving(false);
     }
-    await updateSettings(nextSettings);
-    setSettings(nextSettings);
-    alert("Settings saved successfully!");
+  };
+
+  const handleFaviconUpload = async (file: File, inputEl: HTMLInputElement) => {
+    setUploadingFavicon(true);
+    try {
+      await uploadFavicon(file);
+      toast.success("Favicon uploaded!");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to upload favicon.");
+    } finally {
+      setUploadingFavicon(false);
+      inputEl.value = "";
+    }
+  };
+
+  const handleUndoLogo = async () => {
+    setUndoingLogo(true);
+    try {
+      await undoLogo();
+      toast.success("Logo reverted to previous.");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to undo logo.");
+    } finally {
+      setUndoingLogo(false);
+      setConfirmReset({ open: false, type: null });
+    }
+  };
+
+  const handleUndoFavicon = async () => {
+    setUndoingFavicon(true);
+    try {
+      await undoFavicon();
+      toast.success("Favicon reverted to previous.");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to undo favicon.");
+    } finally {
+      setUndoingFavicon(false);
+      setConfirmReset({ open: false, type: null });
+    }
   };
 
   const tabs = [
@@ -60,12 +116,8 @@ export default function Settings() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="font-display text-3xl font-bold text-foreground mb-2">
-            Settings
-          </h1>
-          <p className="text-muted-foreground">
-            Customize your store's branding, content, and appearance
-          </p>
+          <h1 className="font-display text-3xl font-bold text-foreground mb-2">Settings</h1>
+          <p className="text-muted-foreground">Customize your store's branding, content, and appearance</p>
         </div>
 
         {/* Tabs */}
@@ -87,19 +139,14 @@ export default function Settings() {
 
         {/* Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Form */}
           <div className="lg:col-span-2">
             {/* General */}
             {activeTab === "general" && (
               <div className="bg-card border border-border rounded-xl p-6 space-y-6">
-                <h2 className="font-semibold text-foreground text-lg">
-                  General Settings
-                </h2>
+                <h2 className="font-semibold text-foreground text-lg">General Settings</h2>
 
                 <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">
-                    Site Name
-                  </label>
+                  <label className="block text-sm font-semibold text-foreground mb-2">Site Name</label>
                   <input
                     type="text"
                     name="siteName"
@@ -109,27 +156,17 @@ export default function Settings() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">
-                    Headline
-                  </label>
-                  <input
-                    type="text"
-                    name="headline"
-                    value={settings.headline}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    This appears on your homepage hero section
-                  </p>
+                <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 text-sm text-muted-foreground">
+                  Hero headline and stats are managed in{" "}
+                  <a href="/dashboard/customize/hero" className="text-primary font-semibold hover:underline">
+                    Customize → Hero Section
+                  </a>
+                  .
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-foreground mb-2">
-                      Email
-                    </label>
+                    <label className="block text-sm font-semibold text-foreground mb-2">Email</label>
                     <input
                       type="email"
                       name="email"
@@ -138,11 +175,8 @@ export default function Settings() {
                       className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-semibold text-foreground mb-2">
-                      Phone
-                    </label>
+                    <label className="block text-sm font-semibold text-foreground mb-2">Phone</label>
                     <input
                       type="tel"
                       name="phone"
@@ -154,9 +188,7 @@ export default function Settings() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">
-                    Address
-                  </label>
+                  <label className="block text-sm font-semibold text-foreground mb-2">Address</label>
                   <input
                     type="text"
                     name="address"
@@ -171,14 +203,35 @@ export default function Settings() {
             {/* Branding */}
             {activeTab === "branding" && (
               <div className="bg-card border border-border rounded-xl p-6 space-y-6">
-                <h2 className="font-semibold text-foreground text-lg">
-                  Branding
-                </h2>
+                <h2 className="font-semibold text-foreground text-lg">Branding</h2>
 
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">
-                    Logo
-                  </label>
+                {/* Logo */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-foreground">Logo</label>
+                  {settings.logoUrl && (
+                    <div className="flex items-center gap-3 mb-2">
+                      <img
+                        src={resolveAssetUrl(settings.logoUrl)}
+                        alt="Current logo"
+                        className="h-12 w-auto max-w-[8rem] object-contain rounded border border-border bg-muted/20 p-1"
+                      />
+                      {settings.hasLogoPrevious && (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmReset({ open: true, type: "logo" })}
+                          disabled={undoingLogo}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                        >
+                          {undoingLogo ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Undo2 className="w-3.5 h-3.5" />
+                          )}
+                          Undo
+                        </button>
+                      )}
+                    </div>
+                  )}
                   <div className="flex items-center gap-3">
                     <input
                       type="file"
@@ -192,67 +245,62 @@ export default function Settings() {
                       }}
                       className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                     />
-                    {settings.logoUrl ? (
-                      <a
-                        href={resolveAssetUrl(settings.logoUrl)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-sm text-primary hover:underline whitespace-nowrap"
-                      >
-                        View
-                      </a>
-                    ) : null}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Upload a square logo image (1:1 ratio). File is uploaded when you click Save Settings.
+                  <p className="text-xs text-muted-foreground">
+                    Upload a square logo (1:1 ratio, max 2MB). Saved when you click Save Settings.
                   </p>
-                  {pendingLogoFile ? (
-                    <p className="text-xs text-primary mt-1">Selected: {pendingLogoFile.name}</p>
-                  ) : null}
+                  {pendingLogoFile && (
+                    <p className="text-xs text-primary">Selected: {pendingLogoFile.name}</p>
+                  )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">
-                    Favicon
-                  </label>
+                {/* Favicon */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-foreground">Favicon</label>
+                  {settings.faviconUrl && (
+                    <div className="flex items-center gap-3 mb-2">
+                      <img
+                        src={resolveAssetUrl(settings.faviconUrl)}
+                        alt="Current favicon"
+                        className="h-10 w-10 object-contain rounded border border-border bg-muted/20 p-1"
+                      />
+                      {settings.hasFaviconPrevious && (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmReset({ open: true, type: "favicon" })}
+                          disabled={undoingFavicon}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                        >
+                          {undoingFavicon ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Undo2 className="w-3.5 h-3.5" />
+                          )}
+                          Undo
+                        </button>
+                      )}
+                    </div>
+                  )}
                   <div className="flex items-center gap-3">
                     <input
                       type="file"
                       accept=".ico,.png,.jpg,.jpeg,.webp,.gif,.svg"
+                      disabled={uploadingFavicon}
                       onChange={async (e) => {
                         const inputEl = e.currentTarget;
                         const file = e.target.files?.[0];
                         if (!file) return;
-                        try {
-                          const url = await uploadFavicon(file);
-                          setSettings((prev) => ({ ...prev, faviconUrl: url }));
-                          alert("Favicon uploaded!");
-                        } catch (err: any) {
-                          alert(err?.message || "Failed to upload favicon");
-                        } finally {
-                          inputEl.value = "";
-                        }
+                        await handleFaviconUpload(file, inputEl);
                       }}
-                      className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                      className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 disabled:opacity-50"
                     />
-                    {settings.faviconUrl ? (
-                      <a
-                        href={resolveAssetUrl(settings.faviconUrl)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-sm text-primary hover:underline whitespace-nowrap"
-                      >
-                        View
-                      </a>
-                    ) : null}
+                    {uploadingFavicon && <Loader2 className="w-4 h-4 animate-spin text-primary flex-shrink-0" />}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Upload a small icon for the browser tab (max 2MB).
-                  </p>
+                  <p className="text-xs text-muted-foreground">Uploaded immediately on file selection (max 2MB).</p>
                 </div>
 
                 <p className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-muted-foreground">
-                  Featured products are now managed in the Products submenu under the Featured page.
+                  Featured products are managed under Products → Featured.
                 </p>
               </div>
             )}
@@ -260,14 +308,9 @@ export default function Settings() {
             {/* Content */}
             {activeTab === "content" && (
               <div className="bg-card border border-border rounded-xl p-6 space-y-6">
-                <h2 className="font-semibold text-foreground text-lg">
-                  Content
-                </h2>
-
+                <h2 className="font-semibold text-foreground text-lg">Content</h2>
                 <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">
-                    About Us Text
-                  </label>
+                  <label className="block text-sm font-semibold text-foreground mb-2">About Us Text</label>
                   <textarea
                     name="aboutText"
                     value={settings.aboutText}
@@ -275,19 +318,7 @@ export default function Settings() {
                     rows={6}
                     className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    This text appears on your About page
-                  </p>
-                </div>
-
-                <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
-                  <p className="text-sm text-foreground font-semibold mb-2">
-                    Coming Soon
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Additional content sections and customization options will be
-                    available soon
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">This text appears on your About page</p>
                 </div>
               </div>
             )}
@@ -295,15 +326,10 @@ export default function Settings() {
             {/* Colors */}
             {activeTab === "colors" && (
               <div className="bg-card border border-border rounded-xl p-6 space-y-6">
-                <h2 className="font-semibold text-foreground text-lg">
-                  Color Palette
-                </h2>
-
+                <h2 className="font-semibold text-foreground text-lg">Color Palette</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-foreground mb-2">
-                      Primary Color
-                    </label>
+                    <label className="block text-sm font-semibold text-foreground mb-2">Primary Color</label>
                     <div className="flex gap-2">
                       <input
                         type="color"
@@ -321,11 +347,8 @@ export default function Settings() {
                       />
                     </div>
                   </div>
-
                   <div>
-                    <label className="block text-sm font-semibold text-foreground mb-2">
-                      Secondary Color
-                    </label>
+                    <label className="block text-sm font-semibold text-foreground mb-2">Secondary Color</label>
                     <div className="flex gap-2">
                       <input
                         type="color"
@@ -359,63 +382,37 @@ export default function Settings() {
                     Revert to Default Colors
                   </button>
                 </div>
-
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-900">
-                    <strong>Note:</strong> Color changes will be reflected across
-                    the entire site after saving
+                    <strong>Note:</strong> Color changes are reflected across the entire site after saving.
                   </p>
                 </div>
               </div>
             )}
 
             {/* Save Button */}
-            <div className="mt-6 flex gap-4">
+            <div className="mt-6">
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+                disabled={saving}
+                className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
               >
-                <Save className="w-5 h-5" />
-                Save Settings
-              </button>
-              <button
-                onClick={() => {
-                  /* Preview functionality */
-                  alert("Preview will open the site in a new tab");
-                }}
-                className="flex items-center gap-2 px-6 py-3 border-2 border-primary text-primary rounded-lg font-semibold hover:bg-primary/5 transition-colors"
-              >
-                <Eye className="w-5 h-5" />
-                Preview Site
+                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                {saving ? "Saving…" : "Save Settings"}
               </button>
             </div>
           </div>
 
-          {/* Preview */}
+          {/* Preview Panel */}
           <div className="bg-card border border-border rounded-xl p-6 h-fit sticky top-6 space-y-4">
             <h2 className="font-semibold text-foreground">Preview</h2>
-
             <div className="space-y-4">
               <div>
-                <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">
-                  Site Name
-                </p>
-                <p className="text-lg font-bold text-foreground">
-                  {settings.siteName}
-                </p>
+                <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Site Name</p>
+                <p className="text-lg font-bold text-foreground">{settings.siteName}</p>
               </div>
-
               <div className="border-t border-border pt-4">
-                <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">
-                  Headline
-                </p>
-                <p className="text-foreground">{settings.headline}</p>
-              </div>
-
-              <div className="border-t border-border pt-4">
-                <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">
-                  Logo
-                </p>
+                <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Logo</p>
                 {settings.logoUrl ? (
                   <img
                     src={resolveAssetUrl(settings.logoUrl)}
@@ -426,23 +423,30 @@ export default function Settings() {
                   <div className="text-4xl">{settings.logo}</div>
                 )}
               </div>
-
               <div className="border-t border-border pt-4">
-                <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">
-                  Primary Color
-                </p>
+                <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Primary Color</p>
                 <div
                   className="w-full h-12 rounded-lg border-2 border-border"
                   style={{ backgroundColor: settings.primaryColor }}
                 />
-                <p className="text-xs text-muted-foreground mt-1 font-mono">
-                  {settings.primaryColor}
-                </p>
+                <p className="text-xs text-muted-foreground mt-1 font-mono">{settings.primaryColor}</p>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Undo Confirm Modal */}
+      <ConfirmModal
+        open={confirmReset.open}
+        title={`Revert ${confirmReset.type === "logo" ? "Logo" : "Favicon"}?`}
+        message={`This will replace the current ${confirmReset.type} with the previous one and delete the current file from storage.`}
+        confirmLabel="Yes, Revert"
+        cancelLabel="Keep Current"
+        variant="warning"
+        onConfirm={confirmReset.type === "logo" ? handleUndoLogo : handleUndoFavicon}
+        onCancel={() => setConfirmReset({ open: false, type: null })}
+      />
     </DashboardLayout>
   );
 }

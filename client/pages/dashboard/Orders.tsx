@@ -2,8 +2,10 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { OrdersSlider } from "@/components/OrdersSlider";
 import { api, type SellerOrder } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
+import { ShoppingBag } from "lucide-react";
 
-const looksLikeUrl = (value?: string | null) => !!value && (value.startsWith("http://") || value.startsWith("https://"));
+const looksLikeUrl = (value?: string | null) =>
+  !!value && (value.startsWith("http://") || value.startsWith("https://"));
 
 export default function Orders() {
   const [orders, setOrders] = useState<SellerOrder[]>([]);
@@ -145,8 +147,20 @@ export default function Orders() {
                     <div className="space-y-2">
                       {selectedOrder.items.map((item) => (
                         <div key={item.id} className="rounded-lg border border-border p-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1">
+                          <div className="flex items-start gap-3">
+                            {/* Thumbnail */}
+                            <div className="flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-muted border border-border flex items-center justify-center">
+                              {looksLikeUrl(item.image_url) ? (
+                                <img
+                                  src={item.image_url!}
+                                  alt={item.product_name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <ShoppingBag className="w-5 h-5 text-muted-foreground/50" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-foreground">{item.product_name}</p>
                               <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                               {item.selected_variations && Object.keys(item.selected_variations).length > 0 && (
@@ -159,7 +173,7 @@ export default function Orders() {
                                 </div>
                               )}
                             </div>
-                            <p className="text-sm font-semibold text-foreground">${Number(item.line_total).toFixed(2)}</p>
+                            <p className="text-sm font-semibold text-foreground flex-shrink-0">${Number(item.line_total).toFixed(2)}</p>
                           </div>
                         </div>
                       ))}

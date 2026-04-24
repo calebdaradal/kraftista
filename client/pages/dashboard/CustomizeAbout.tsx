@@ -1,50 +1,97 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { IconSelector } from "@/components/IconSelector";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { useCustomization } from "@/context/CustomizationContext";
-import { useState } from "react";
-import { Trash2, Plus } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { useState, useRef } from "react";
+import { Trash2, Plus, Upload, X, Eye, EyeOff, Loader2 } from "lucide-react";
 import type { AboutValue, AboutMilestone, AboutTeamMember } from "@shared/customization";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
+
+const apiBase =
+  typeof window === "undefined"
+    ? "http://127.0.0.1:8000/api"
+    : import.meta.env.VITE_API_URL ||
+      (import.meta.env.DEV ? "http://127.0.0.1:8000/api" : `${window.location.origin}/api`);
+const assetBase = apiBase.replace(/\/api\/?$/, "");
+const resolveUrl = (path?: string) => {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("data:")) return path;
+  return `${assetBase}${path.startsWith("/") ? "" : "/"}${path}`;
+};
+
+type Tab = "hero" | "values" | "milestones" | "team" | "preview";
 
 export default function CustomizeAbout() {
   const { about, updateAbout, resetAbout } = useCustomization();
+  const { user } = useAuth();
   const [formData, setFormData] = useState(about);
-  const [activeTab, setActiveTab] = useState<"hero" | "values" | "milestones" | "team" | "preview">("hero");
+  const [activeTab, setActiveTab] = useState<Tab>("hero");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async () => {
-    await updateAbout(formData);
-    alert("About page customization saved!");
-  };
-
-  const handleReset = async () => {
-    if (confirm("Are you sure you want to reset to defaults?")) {
-      await resetAbout();
-      setFormData(about);
+    setSaving(true);
+    try {
+      await updateAbout(formData);
+      toast.success("About page saved!");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save.");
+    } finally {
+      setSaving(false);
     }
   };
 
-  // Hero Section
-  const handleHeroChange = (field: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+  const handleReset = async () => {
+    setConfirmReset(false);
+    try {
+      await resetAbout();
+      setFormData(about);
+      toast.success("About page reset to defaults.");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to reset.");
+    }
   };
 
-  // Values Section
+  const handleFieldChange = (field: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handlePreviewImageUpload = async (file: File) => {
+    const token = localStorage.getItem("craft_auth_token");
+    if (!token) {
+      toast.error("You must be logged in to upload images.");
+      return;
+    }
+    setUploadingImage(true);
+    try {
+      const result = await api.customization.uploadPreviewImage(file, token);
+      setFormData((prev) => ({
+        ...prev,
+        previewImage: result.preview_image_url,
+        previewImageUrl: resolveUrl(result.preview_image_url),
+      }));
+      toast.success("Preview image uploaded!");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to upload image.");
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  // Values
   const updateValue = (id: string, field: keyof AboutValue, value: string) => {
     setFormData((prev) => ({
       ...prev,
       values: prev.values.map((v) => (v.id === id ? { ...v, [field]: value } : v)),
     }));
   };
-
-  const deleteValue = (id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      values: prev.values.filter((v) => v.id !== id),
-    }));
-  };
-
+  const deleteValue = (id: string) =>
+    setFormData((prev) => ({ ...prev, values: prev.values.filter((v) => v.id !== id) }));
   const addValue = () => {
     const newValue: AboutValue = {
       id: Date.now().toString(),
@@ -52,27 +99,18 @@ export default function CustomizeAbout() {
       title: "New Value",
       description: "Add description here",
     };
-    setFormData((prev) => ({
-      ...prev,
-      values: [...prev.values, newValue],
-    }));
+    setFormData((prev) => ({ ...prev, values: [...prev.values, newValue] }));
   };
 
-  // Milestones Section
+  // Milestones
   const updateMilestone = (id: string, field: keyof AboutMilestone, value: string) => {
     setFormData((prev) => ({
       ...prev,
       milestones: prev.milestones.map((m) => (m.id === id ? { ...m, [field]: value } : m)),
     }));
   };
-
-  const deleteMilestone = (id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      milestones: prev.milestones.filter((m) => m.id !== id),
-    }));
-  };
-
+  const deleteMilestone = (id: string) =>
+    setFormData((prev) => ({ ...prev, milestones: prev.milestones.filter((m) => m.id !== id) }));
   const addMilestone = () => {
     const newMilestone: AboutMilestone = {
       id: Date.now().toString(),
@@ -80,37 +118,56 @@ export default function CustomizeAbout() {
       title: "New Milestone",
       description: "Add description here",
     };
-    setFormData((prev) => ({
-      ...prev,
-      milestones: [...prev.milestones, newMilestone],
-    }));
+    setFormData((prev) => ({ ...prev, milestones: [...prev.milestones, newMilestone] }));
   };
 
-  // Team Section
+  // Team
   const updateTeamMember = (id: string, field: keyof AboutTeamMember, value: string) => {
     setFormData((prev) => ({
       ...prev,
       team: prev.team.map((m) => (m.id === id ? { ...m, [field]: value } : m)),
     }));
   };
-
-  const deleteTeamMember = (id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      team: prev.team.filter((m) => m.id !== id),
-    }));
-  };
-
+  const deleteTeamMember = (id: string) =>
+    setFormData((prev) => ({ ...prev, team: prev.team.filter((m) => m.id !== id) }));
   const addTeamMember = () => {
     const newMember: AboutTeamMember = {
       id: Date.now().toString(),
       name: "New Member",
       role: "Job Title",
     };
-    setFormData((prev) => ({
-      ...prev,
-      team: [...prev.team, newMember],
-    }));
+    setFormData((prev) => ({ ...prev, team: [...prev.team, newMember] }));
+  };
+
+  const SectionToggle = ({
+    field,
+    label,
+  }: {
+    field: "heroEnabled" | "valuesEnabled" | "milestonesEnabled" | "teamEnabled" | "previewSectionEnabled";
+    label: string;
+  }) => {
+    const enabled = formData[field] !== false;
+    return (
+      <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30 mb-4">
+        <div className="flex items-center gap-2">
+          {enabled ? <Eye className="w-4 h-4 text-primary" /> : <EyeOff className="w-4 h-4 text-muted-foreground" />}
+          <span className="text-sm font-medium text-foreground">{label}</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => handleFieldChange(field, !enabled)}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+            enabled ? "bg-primary" : "bg-muted-foreground/30"
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+              enabled ? "translate-x-6" : "translate-x-1"
+            }`}
+          />
+        </button>
+      </div>
+    );
   };
 
   return (
@@ -123,26 +180,28 @@ export default function CustomizeAbout() {
           </div>
           <div className="flex gap-2">
             <button
-              onClick={handleReset}
+              onClick={() => setConfirmReset(true)}
               className="px-4 py-2 rounded-lg border border-destructive text-destructive hover:bg-destructive/10 transition-colors text-sm font-medium"
             >
               Reset
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium"
+              disabled={saving}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-60"
             >
-              Save Changes
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              {saving ? "Saving…" : "Save Changes"}
             </button>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-2 border-b border-border overflow-x-auto">
-          {["hero", "values", "milestones", "team", "preview"].map((tab) => (
+          {(["hero", "values", "milestones", "team", "preview"] as Tab[]).map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab as any)}
+              onClick={() => setActiveTab(tab)}
               className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab
                   ? "border-primary text-primary"
@@ -159,12 +218,13 @@ export default function CustomizeAbout() {
           {/* Hero Section */}
           {activeTab === "hero" && (
             <div className="space-y-6">
+              <SectionToggle field="heroEnabled" label="Show Hero Section on About page" />
               <div>
                 <label className="text-sm font-medium text-foreground">Hero Title</label>
                 <input
                   type="text"
                   value={formData.heroTitle}
-                  onChange={(e) => handleHeroChange("heroTitle", e.target.value)}
+                  onChange={(e) => handleFieldChange("heroTitle", e.target.value)}
                   className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-background"
                 />
               </div>
@@ -172,7 +232,7 @@ export default function CustomizeAbout() {
                 <label className="text-sm font-medium text-foreground">Hero Subtitle</label>
                 <textarea
                   value={formData.heroSubtitle}
-                  onChange={(e) => handleHeroChange("heroSubtitle", e.target.value)}
+                  onChange={(e) => handleFieldChange("heroSubtitle", e.target.value)}
                   rows={4}
                   className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-background"
                 />
@@ -183,16 +243,16 @@ export default function CustomizeAbout() {
           {/* Values Section */}
           {activeTab === "values" && (
             <div className="space-y-6">
+              <SectionToggle field="valuesEnabled" label="Show Values Section on About page" />
               <div>
                 <label className="text-sm font-medium text-foreground">Section Title</label>
                 <input
                   type="text"
                   value={formData.valuesTitle}
-                  onChange={(e) => handleHeroChange("valuesTitle", e.target.value)}
+                  onChange={(e) => handleFieldChange("valuesTitle", e.target.value)}
                   className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-background"
                 />
               </div>
-
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-foreground">Values</h3>
@@ -204,7 +264,6 @@ export default function CustomizeAbout() {
                     Add Value
                   </button>
                 </div>
-
                 {formData.values.map((value) => (
                   <div key={value.id} className="border border-border rounded-lg p-4 space-y-4">
                     <div className="flex items-start justify-between gap-4">
@@ -248,16 +307,16 @@ export default function CustomizeAbout() {
           {/* Milestones Section */}
           {activeTab === "milestones" && (
             <div className="space-y-6">
+              <SectionToggle field="milestonesEnabled" label="Show Milestones Section on About page" />
               <div>
                 <label className="text-sm font-medium text-foreground">Section Title</label>
                 <input
                   type="text"
                   value={formData.milestonesTitle}
-                  onChange={(e) => handleHeroChange("milestonesTitle", e.target.value)}
+                  onChange={(e) => handleFieldChange("milestonesTitle", e.target.value)}
                   className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-background"
                 />
               </div>
-
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-foreground">Milestones</h3>
@@ -269,7 +328,6 @@ export default function CustomizeAbout() {
                     Add Milestone
                   </button>
                 </div>
-
                 {formData.milestones.map((milestone) => (
                   <div key={milestone.id} className="border border-border rounded-lg p-4 space-y-3">
                     <div className="flex items-start justify-between gap-4">
@@ -318,16 +376,16 @@ export default function CustomizeAbout() {
           {/* Team Section */}
           {activeTab === "team" && (
             <div className="space-y-6">
+              <SectionToggle field="teamEnabled" label="Show Team Section on About page" />
               <div>
                 <label className="text-sm font-medium text-foreground">Section Title</label>
                 <input
                   type="text"
                   value={formData.teamTitle}
-                  onChange={(e) => handleHeroChange("teamTitle", e.target.value)}
+                  onChange={(e) => handleFieldChange("teamTitle", e.target.value)}
                   className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-background"
                 />
               </div>
-
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-foreground">Team Members</h3>
@@ -339,7 +397,6 @@ export default function CustomizeAbout() {
                     Add Member
                   </button>
                 </div>
-
                 {formData.team.map((member) => (
                   <div key={member.id} className="border border-border rounded-lg p-4 space-y-3">
                     <div className="flex items-start justify-between gap-4">
@@ -376,36 +433,93 @@ export default function CustomizeAbout() {
             </div>
           )}
 
-          {/* Preview */}
+          {/* Preview Section */}
           {activeTab === "preview" && (
             <div className="space-y-6">
+              <SectionToggle field="previewSectionEnabled" label="Show About Preview on Homepage" />
+
+              {/* Preview Image Upload */}
               <div>
-                <label className="text-sm font-medium text-foreground">Preview Emoji</label>
+                <label className="text-sm font-medium text-foreground">Preview Image</label>
+                <p className="text-xs text-muted-foreground mt-1 mb-3">
+                  This image appears in the About preview section on the homepage. It will be displayed as-is with no background decoration.
+                </p>
+
+                {formData.previewImageUrl || formData.previewImage ? (
+                  <div className="space-y-3">
+                    <div className="relative inline-block">
+                      <img
+                        src={resolveUrl(formData.previewImageUrl || formData.previewImage)}
+                        alt={formData.previewImageAlt || "Preview"}
+                        className="h-40 w-40 object-contain rounded-lg border border-border bg-muted/20"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({ ...prev, previewImage: undefined, previewImageUrl: undefined }))
+                        }
+                        className="absolute -top-2 -right-2 p-1 bg-destructive text-white rounded-full shadow"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border hover:bg-muted transition-colors text-sm"
+                    >
+                      <Upload className="w-4 h-4" />
+                      Replace Image
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="flex items-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-colors text-sm text-muted-foreground w-full justify-center"
+                  >
+                    {uploadingImage ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        Uploading…
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        Upload Preview Image
+                      </>
+                    )}
+                  </button>
+                )}
+
                 <input
-                  type="text"
-                  value={formData.previewEmoji}
-                  onChange={(e) => handleHeroChange("previewEmoji", e.target.value)}
-                  maxLength={2}
-                  className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-background"
-                  placeholder="🪄"
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".png,.jpg,.jpeg,.webp,.gif,.svg"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handlePreviewImageUpload(file);
+                  }}
                 />
-                <p className="text-xs text-muted-foreground mt-1">Single emoji or character for the preview section</p>
               </div>
+
               <div>
                 <label className="text-sm font-medium text-foreground">Preview Title</label>
                 <input
                   type="text"
                   value={formData.previewTitle}
-                  onChange={(e) => handleHeroChange("previewTitle", e.target.value)}
+                  onChange={(e) => handleFieldChange("previewTitle", e.target.value)}
                   className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-background"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">Preview Image Alt Text</label>
+                <label className="text-sm font-medium text-foreground">Image Alt Text</label>
                 <input
                   type="text"
                   value={formData.previewImageAlt}
-                  onChange={(e) => handleHeroChange("previewImageAlt", e.target.value)}
+                  onChange={(e) => handleFieldChange("previewImageAlt", e.target.value)}
                   className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-background"
                 />
               </div>
@@ -413,6 +527,15 @@ export default function CustomizeAbout() {
           )}
         </div>
       </div>
+      <ConfirmModal
+        open={confirmReset}
+        title="Reset About Page?"
+        message="This will restore all About page content to its default values. This cannot be undone."
+        confirmLabel="Reset to Defaults"
+        variant="danger"
+        onConfirm={handleReset}
+        onCancel={() => setConfirmReset(false)}
+      />
     </DashboardLayout>
   );
 }

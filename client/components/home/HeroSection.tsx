@@ -1,9 +1,15 @@
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { useSettings } from "@/context/SettingsContext";
+import { useCustomization } from "@/context/CustomizationContext";
 
 export function HeroSection() {
   const { settings } = useSettings();
+  const { hero } = useCustomization();
+
+  // Fall back to settings.headline if hero customization has no headline yet
+  const headline = hero.headline || settings.headline || "";
+
   return (
     <section className="relative min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-5rem)] flex items-center overflow-hidden">
       {/* Background gradient */}
@@ -20,7 +26,7 @@ export function HeroSection() {
             </div>
 
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
-              {(settings.headline || "").split("\n").map((line, i) => (
+              {headline.split("\n").map((line, i) => (
                 <span key={i} className={i === 1 ? "text-primary" : undefined}>
                   {line}
                   <br />
@@ -48,23 +54,24 @@ export function HeroSection() {
               </Link>
             </div>
 
-            {/* Social Proof */}
-            <div className="flex items-center gap-8 pt-4">
-              <div>
-                <div className="text-2xl font-bold text-foreground">2500+</div>
-                <p className="text-sm text-muted-foreground">Happy Customers</p>
+            {/* Social Proof Stats */}
+            {hero.statsEnabled && hero.stats.some((s) => s.enabled) && (
+              <div className="flex items-center gap-8 pt-4">
+                {hero.stats
+                  .filter((s) => s.enabled)
+                  .map((stat) => (
+                    <div key={stat.id}>
+                      <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+                      <p className="text-sm text-muted-foreground">{stat.label}</p>
+                    </div>
+                  ))}
               </div>
-              <div>
-                <div className="text-2xl font-bold text-foreground">800+</div>
-                <p className="text-sm text-muted-foreground">Products</p>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Right Image Area */}
           <div className="hidden md:flex items-center justify-center">
             <div className="relative w-full aspect-square">
-              {/* Featured Product Visual */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl"></div>
               <div className="absolute inset-4 bg-white rounded-xl shadow-lg flex items-center justify-center">
                 <div className="text-center space-y-4">

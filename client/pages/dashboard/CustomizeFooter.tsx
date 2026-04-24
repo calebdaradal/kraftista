@@ -1,23 +1,38 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { useCustomization } from "@/context/CustomizationContext";
 import { useState } from "react";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Loader2 } from "lucide-react";
 import type { FooterLink, FooterSection } from "@shared/customization";
+import { toast } from "sonner";
 
 export default function CustomizeFooter() {
   const { footer, updateFooter, resetFooter } = useCustomization();
   const [formData, setFormData] = useState(footer);
   const [activeTab, setActiveTab] = useState<"brand" | "sections" | "social" | "bottom">("brand");
+  const [saving, setSaving] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const handleSave = async () => {
-    await updateFooter(formData);
-    alert("Footer customization saved!");
+    setSaving(true);
+    try {
+      await updateFooter(formData);
+      toast.success("Footer saved!");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleReset = async () => {
-    if (confirm("Are you sure you want to reset to defaults?")) {
+    setConfirmReset(false);
+    try {
       await resetFooter();
       setFormData(footer);
+      toast.success("Footer reset to defaults.");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to reset.");
     }
   };
 
@@ -171,16 +186,18 @@ export default function CustomizeFooter() {
           </div>
           <div className="flex gap-2">
             <button
-              onClick={handleReset}
+              onClick={() => setConfirmReset(true)}
               className="px-4 py-2 rounded-lg border border-destructive text-destructive hover:bg-destructive/10 transition-colors text-sm font-medium"
             >
               Reset
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium"
+              disabled={saving}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-60"
             >
-              Save Changes
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              {saving ? "Saving…" : "Save Changes"}
             </button>
           </div>
         </div>
@@ -437,6 +454,15 @@ export default function CustomizeFooter() {
           )}
         </div>
       </div>
+      <ConfirmModal
+        open={confirmReset}
+        title="Reset Footer?"
+        message="This will restore all footer content to its default values."
+        confirmLabel="Reset to Defaults"
+        variant="danger"
+        onConfirm={handleReset}
+        onCancel={() => setConfirmReset(false)}
+      />
     </DashboardLayout>
   );
 }

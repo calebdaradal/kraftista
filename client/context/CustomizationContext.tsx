@@ -1,15 +1,22 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import type { AboutCustomization, FooterCustomization } from "@shared/customization";
-import { DEFAULT_ABOUT_CUSTOMIZATION, DEFAULT_FOOTER_CUSTOMIZATION } from "@shared/customization";
+import type { AboutCustomization, FooterCustomization, HeroCustomization } from "@shared/customization";
+import {
+  DEFAULT_ABOUT_CUSTOMIZATION,
+  DEFAULT_FOOTER_CUSTOMIZATION,
+  DEFAULT_HERO_CUSTOMIZATION,
+} from "@shared/customization";
 import { api } from "@/lib/api";
 
 interface CustomizationContextType {
   about: AboutCustomization;
   footer: FooterCustomization;
+  hero: HeroCustomization;
   updateAbout: (about: AboutCustomization) => Promise<void>;
   updateFooter: (footer: FooterCustomization) => Promise<void>;
+  updateHero: (hero: HeroCustomization) => Promise<void>;
   resetAbout: () => Promise<void>;
   resetFooter: () => Promise<void>;
+  resetHero: () => Promise<void>;
 }
 
 const CustomizationContext = createContext<CustomizationContextType | undefined>(undefined);
@@ -17,30 +24,41 @@ const CustomizationContext = createContext<CustomizationContextType | undefined>
 const STORAGE_KEYS = {
   about: "craft_customization_about",
   footer: "craft_customization_footer",
+  hero: "craft_customization_hero",
 };
 
 export function CustomizationProvider({ children }: { children: React.ReactNode }) {
   const [about, setAbout] = useState<AboutCustomization>(DEFAULT_ABOUT_CUSTOMIZATION);
   const [footer, setFooter] = useState<FooterCustomization>(DEFAULT_FOOTER_CUSTOMIZATION);
+  const [hero, setHero] = useState<HeroCustomization>(DEFAULT_HERO_CUSTOMIZATION);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load from API first; fall back to localStorage
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const remote = await api.customization.get();
         if (cancelled) return;
-        if (remote.about) setAbout(remote.about);
-        if (remote.footer) setFooter(remote.footer);
-        if (remote.about) localStorage.setItem(STORAGE_KEYS.about, JSON.stringify(remote.about));
-        if (remote.footer) localStorage.setItem(STORAGE_KEYS.footer, JSON.stringify(remote.footer));
+        if (remote.about) {
+          setAbout(remote.about);
+          localStorage.setItem(STORAGE_KEYS.about, JSON.stringify(remote.about));
+        }
+        if (remote.footer) {
+          setFooter(remote.footer);
+          localStorage.setItem(STORAGE_KEYS.footer, JSON.stringify(remote.footer));
+        }
+        if (remote.hero) {
+          setHero(remote.hero);
+          localStorage.setItem(STORAGE_KEYS.hero, JSON.stringify(remote.hero));
+        }
       } catch {
         try {
           const savedAbout = localStorage.getItem(STORAGE_KEYS.about);
           const savedFooter = localStorage.getItem(STORAGE_KEYS.footer);
+          const savedHero = localStorage.getItem(STORAGE_KEYS.hero);
           if (savedAbout) setAbout(JSON.parse(savedAbout));
           if (savedFooter) setFooter(JSON.parse(savedFooter));
+          if (savedHero) setHero(JSON.parse(savedHero));
         } catch (error) {
           console.error("Failed to load customizations:", error);
         }
@@ -87,20 +105,35 @@ export function CustomizationProvider({ children }: { children: React.ReactNode 
     }
   };
 
-  const resetAbout = async () => {
-    await updateAbout(DEFAULT_ABOUT_CUSTOMIZATION);
+  const updateHero = async (newHero: HeroCustomization) => {
+    setHero(newHero);
+    try {
+      localStorage.setItem(STORAGE_KEYS.hero, JSON.stringify(newHero));
+    } catch (error) {
+      console.error("Failed to save hero customization:", error);
+    }
+    const token = localStorage.getItem("craft_auth_token");
+    if (token) {
+      try {
+        await api.customization.updateHero(newHero, token);
+      } catch (error) {
+        console.error("Failed to save hero customization to server:", error);
+      }
+    }
   };
 
-  const resetFooter = async () => {
-    await updateFooter(DEFAULT_FOOTER_CUSTOMIZATION);
-  };
+  const resetAbout = async () => updateAbout(DEFAULT_ABOUT_CUSTOMIZATION);
+  const resetFooter = async () => updateFooter(DEFAULT_FOOTER_CUSTOMIZATION);
+  const resetHero = async () => updateHero(DEFAULT_HERO_CUSTOMIZATION);
 
   if (!isLoaded) {
     return null;
   }
 
   return (
-    <CustomizationContext.Provider value={{ about, footer, updateAbout, updateFooter, resetAbout, resetFooter }}>
+    <CustomizationContext.Provider
+      value={{ about, footer, hero, updateAbout, updateFooter, updateHero, resetAbout, resetFooter, resetHero }}
+    >
       {children}
     </CustomizationContext.Provider>
   );

@@ -105,6 +105,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       href: "/dashboard/customize",
       icon: Palette,
       children: [
+        { label: "Hero Section", href: "/dashboard/customize/hero" },
         { label: "About Page", href: "/dashboard/customize/about" },
         { label: "Footer", href: "/dashboard/customize/footer" },
       ],
@@ -146,9 +147,24 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Logo */}
         <div className="p-4 border-b border-border">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-display font-bold">C</span>
-            </div>
+            {settings.logoUrl ? (
+              <img
+                src={(() => {
+                  const path = settings.logoUrl ?? "";
+                  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("data:")) return path;
+                  const base = (import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://127.0.0.1:8000/api" : `${window.location.origin}/api`)).replace(/\/api\/?$/, "");
+                  return `${base}${path.startsWith("/") ? "" : "/"}${path}`;
+                })()}
+                alt={settings.siteName || "Logo"}
+                className="w-10 h-10 object-contain rounded-lg flex-shrink-0"
+              />
+            ) : (
+              <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-display font-bold text-sm">
+                  {(settings.siteName || "C").charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
             {sidebarOpen && (
               <div>
                 <div className="font-display font-bold text-foreground text-sm">

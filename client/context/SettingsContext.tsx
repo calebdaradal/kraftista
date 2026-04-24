@@ -14,6 +14,8 @@ export interface SiteSettings {
   logoUrl?: string;
   featuredProductIds: string[];
   faviconUrl?: string;
+  hasLogoPrevious?: boolean;
+  hasFaviconPrevious?: boolean;
 }
 
 interface SettingsContextType {
@@ -21,6 +23,9 @@ interface SettingsContextType {
   updateSettings: (newSettings: Partial<SiteSettings>) => Promise<void>;
   uploadFavicon: (file: File) => Promise<string>;
   uploadLogo: (file: File) => Promise<string>;
+  undoLogo: () => Promise<string>;
+  undoFavicon: () => Promise<string>;
+  refreshSettings: () => Promise<void>;
 }
 
 const defaultSettings: SiteSettings = {
@@ -60,17 +65,20 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     return stored ? JSON.parse(stored) : defaultSettings;
   });
 
+  const loadRemote = async () => {
+    const remote = await api.settings.get();
+    if (remote.data) {
+      const merged = { ...defaultSettings, ...remote.data } as SiteSettings;
+      setSettings(merged);
+      localStorage.setItem("craft_site_settings", JSON.stringify(merged));
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const remote = await api.settings.get();
-        if (cancelled) return;
-        if (remote.data) {
-          const merged = { ...defaultSettings, ...remote.data } as SiteSettings;
-          setSettings(merged);
-          localStorage.setItem("craft_site_settings", JSON.stringify(merged));
-        }
+        await loadRemote();
       } catch {
         // fall back to localStorage/defaults
       }
@@ -165,11 +173,15 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshSettings = async () => {
+    await loadRemote();
+  };
+
   const uploadFavicon = async (file: File) => {
     const token = localStorage.getItem("craft_auth_token");
     if (!token) throw new Error("Not authenticated");
     const res = await api.settings.uploadFavicon(file, token);
-    await updateSettings({ faviconUrl: res.favicon_url });
+    await refreshSettings();
     return res.favicon_url;
   };
 
@@ -177,12 +189,28 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem("craft_auth_token");
     if (!token) throw new Error("Not authenticated");
     const res = await api.settings.uploadLogo(file, token);
-    await updateSettings({ logoUrl: res.logo_url });
+    await refreshSettings();
     return res.logo_url;
   };
 
+  const undoLogo = async () => {
+    const token = localStorage.getItem("craft_auth_token");
+    if (!token) throw new Error("Not authenticated");
+    const res = await api.settings.undoLogo(token);
+    await refreshSettings();
+    return res.logo_url;
+  };
+
+  const undoFavicon = async () => {
+    const token = localStorage.getItem("craft_auth_token");
+    if (!token) throw new Error("Not authenticated");
+    const res = await api.settings.undoFavicon(token);
+    await refreshSettings();
+    return res.favicon_url;
+  };
+
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, uploadFavicon, uploadLogo }}>
+    <SettingsContext.Provider value={{ settings, updateSettings, uploadFavicon, uploadLogo, undoLogo, undoFavicon, refreshSettings }}>
       {children}
     </SettingsContext.Provider>
   );

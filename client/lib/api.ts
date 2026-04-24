@@ -1,5 +1,5 @@
 import type { Product } from "@/types/product";
-import type { AboutCustomization, FooterCustomization } from "@shared/customization";
+import type { AboutCustomization, FooterCustomization, HeroCustomization } from "@shared/customization";
 
 const defaultApiBase =
   typeof window === "undefined"
@@ -456,13 +456,39 @@ export const api = {
   },
   customization: {
     async get() {
-      return request<{ about: AboutCustomization | null; footer: FooterCustomization | null }>("/customization");
+      return request<{ about: AboutCustomization | null; footer: FooterCustomization | null; hero: HeroCustomization | null }>("/customization");
     },
     async updateAbout(payload: AboutCustomization, token: string) {
       await request<void>("/customization/about", { method: "PUT", body: JSON.stringify({ data: payload }) }, token);
     },
     async updateFooter(payload: FooterCustomization, token: string) {
       await request<void>("/customization/footer", { method: "PUT", body: JSON.stringify({ data: payload }) }, token);
+    },
+    async updateHero(payload: HeroCustomization, token: string) {
+      await request<void>("/customization/hero", { method: "PUT", body: JSON.stringify({ data: payload }) }, token);
+    },
+    async uploadPreviewImage(file: File, token: string) {
+      const form = new FormData();
+      form.append("file", file);
+      const endpoints = buildApiCandidates("/customization/about/preview-image");
+      let lastErrorMessage = "Request failed";
+      let lastStatus = 500;
+      for (const endpoint of endpoints) {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          body: form,
+        });
+        if (response.ok) {
+          return (await response.json()) as { preview_image_url: string };
+        }
+        lastStatus = response.status;
+        lastErrorMessage = await response.text();
+        if (response.status !== 404) {
+          throw new Error(lastErrorMessage || `Request failed (${response.status})`);
+        }
+      }
+      throw new Error(lastErrorMessage || `Request failed (${lastStatus})`);
     },
   },
   settings: {
@@ -517,6 +543,12 @@ export const api = {
         }
       }
       throw new Error(lastErrorMessage || `Request failed (${lastStatus})`);
+    },
+    async undoLogo(token: string) {
+      return request<{ logo_url: string }>("/settings/logo/undo", { method: "POST" }, token);
+    },
+    async undoFavicon(token: string) {
+      return request<{ favicon_url: string }>("/settings/favicon/undo", { method: "POST" }, token);
     },
   },
 };
