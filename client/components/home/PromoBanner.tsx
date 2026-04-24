@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 export function PromoBanner() {
   return (
     <section className="py-12 md:py-16">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary to-secondary p-8 md:p-16">
           {/* Background pattern */}
           <div className={"absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"40\" fill=\"white\"/></svg>')]"}></div>

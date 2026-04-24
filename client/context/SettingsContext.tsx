@@ -16,6 +16,11 @@ export interface SiteSettings {
   faviconUrl?: string;
   hasLogoPrevious?: boolean;
   hasFaviconPrevious?: boolean;
+  reviewMinDays?: number;
+  reviewMaxDays?: number;
+  logoMode?: "square" | "wide";
+  wideLogoUrl?: string;
+  hasWideLogoPrevious?: boolean;
 }
 
 interface SettingsContextType {
@@ -25,6 +30,8 @@ interface SettingsContextType {
   uploadLogo: (file: File) => Promise<string>;
   undoLogo: () => Promise<string>;
   undoFavicon: () => Promise<string>;
+  uploadWideLogo: (file: File) => Promise<string>;
+  undoWideLogo: () => Promise<string>;
   refreshSettings: () => Promise<void>;
 }
 
@@ -209,8 +216,24 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     return res.favicon_url;
   };
 
+  const uploadWideLogo = async (file: File) => {
+    const token = localStorage.getItem("craft_auth_token");
+    if (!token) throw new Error("Not authenticated");
+    const res = await api.settings.uploadWideLogo(file, token);
+    await refreshSettings();
+    return res.wide_logo_url;
+  };
+
+  const undoWideLogo = async () => {
+    const token = localStorage.getItem("craft_auth_token");
+    if (!token) throw new Error("Not authenticated");
+    const res = await api.settings.undoWideLogo(token);
+    await refreshSettings();
+    return res.wide_logo_url;
+  };
+
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, uploadFavicon, uploadLogo, undoLogo, undoFavicon, refreshSettings }}>
+    <SettingsContext.Provider value={{ settings, updateSettings, uploadFavicon, uploadLogo, undoLogo, undoFavicon, uploadWideLogo, undoWideLogo, refreshSettings }}>
       {children}
     </SettingsContext.Provider>
   );

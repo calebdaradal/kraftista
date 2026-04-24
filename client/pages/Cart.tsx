@@ -10,7 +10,7 @@ export default function Cart() {
     return (
       <Layout>
         <section className="py-20">
-          <div className="container mx-auto px-4 text-center">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <div className="space-y-6">
               <ShoppingCart className="w-16 h-16 text-muted-foreground mx-auto" />
               <div>
@@ -38,7 +38,7 @@ export default function Cart() {
   return (
     <Layout>
       <section className="py-12 md:py-16">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="font-display text-3xl font-bold text-foreground mb-8">
             Shopping Cart
           </h1>
@@ -49,7 +49,7 @@ export default function Cart() {
               {items.map((item) => (
                 <div
                   key={`${item.productId}-${JSON.stringify(item.selectedVariations)}`}
-                  className="bg-card border border-border rounded-xl p-6 flex gap-6"
+                  className="bg-card border border-border rounded-xl p-4 sm:p-6 flex gap-3 sm:gap-6"
                 >
                   {/* Product Image */}
                   <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted text-3xl">

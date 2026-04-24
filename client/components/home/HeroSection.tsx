@@ -11,11 +11,11 @@ export function HeroSection() {
   const headline = hero.headline || settings.headline || "";
 
   return (
-    <section className="relative min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-5rem)] flex items-center overflow-hidden">
+    <section className="relative min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-5rem)] flex items-center overflow-hidden py-12 md:py-0">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-primary/10"></div>
 
-      <div className="container mx-auto px-4 relative z-10">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           {/* Left Content */}
           <div className="space-y-6">
@@ -56,7 +56,7 @@ export function HeroSection() {
 
             {/* Social Proof Stats */}
             {hero.statsEnabled && hero.stats.some((s) => s.enabled) && (
-              <div className="flex items-center gap-8 pt-4">
+              <div className="flex flex-wrap items-center gap-6 pt-4">
                 {hero.stats
                   .filter((s) => s.enabled)
                   .map((stat) => (

@@ -43,7 +43,7 @@ export default function AccountLikes() {
   return (
     <Layout>
       <section className="py-10 md:py-14">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
             <h1 className="font-display text-2xl font-bold text-foreground md:text-3xl">Likes</h1>
             <p className="text-sm text-muted-foreground md:text-base">Products you saved for later.</p>

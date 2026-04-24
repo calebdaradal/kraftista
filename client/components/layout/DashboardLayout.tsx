@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { SiteLogo } from "@/components/SiteLogo";
 import {
   Menu,
   X,
@@ -15,6 +16,7 @@ import {
   ChevronRight,
   MessageSquare,
   Palette,
+  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSettings } from "@/context/SettingsContext";
@@ -101,6 +103,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       icon: MessageSquare,
     },
     {
+      label: "Refunds",
+      href: "/dashboard/refunds",
+      icon: RotateCcw,
+    },
+    {
       label: "Customize",
       href: "/dashboard/customize",
       icon: Palette,
@@ -146,34 +153,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       >
         {/* Logo */}
         <div className="p-4 border-b border-border">
-          <Link to="/" className="flex items-center gap-3">
-            {settings.logoUrl ? (
-              <img
-                src={(() => {
-                  const path = settings.logoUrl ?? "";
-                  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("data:")) return path;
-                  const base = (import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://127.0.0.1:8000/api" : `${window.location.origin}/api`)).replace(/\/api\/?$/, "");
-                  return `${base}${path.startsWith("/") ? "" : "/"}${path}`;
-                })()}
-                alt={settings.siteName || "Logo"}
-                className="w-10 h-10 object-contain rounded-lg flex-shrink-0"
-              />
-            ) : (
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-display font-bold text-sm">
-                  {(settings.siteName || "C").charAt(0).toUpperCase()}
-                </span>
-              </div>
-            )}
-            {sidebarOpen && (
-              <div>
-                <div className="font-display font-bold text-foreground text-sm">
-                  {settings.siteName || "Craft"}
-                </div>
-                <div className="text-xs text-muted-foreground">Admin</div>
-              </div>
-            )}
-          </Link>
+          {sidebarOpen ? (
+            <SiteLogo
+              label={settings.siteName || "Craft"}
+              sublabel="Admin"
+              wideImgClass="h-8 w-auto max-w-[8rem]"
+              squareImgClass="w-10 h-10"
+            />
+          ) : (
+            /* Collapsed sidebar — icon only, no text */
+            <SiteLogo
+              wideImgClass="h-8 w-8 object-cover"
+              squareImgClass="w-10 h-10"
+            />
+          )}
         </div>
 
         {/* Navigation */}

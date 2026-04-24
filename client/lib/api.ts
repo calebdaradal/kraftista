@@ -97,6 +97,8 @@ export interface CustomerOrder {
   tracking_reference?: string | null;
   delivered_at?: string | null;
   created_at: string;
+  refund_requested?: boolean;
+  refund_note?: string | null;
   items: CustomerOrderItem[];
 }
 
@@ -132,6 +134,13 @@ export interface ProductReview {
 
 export interface ReviewNotification {
   pending_count: number;
+}
+
+export interface PublicReview {
+  id: string;
+  rating: number;
+  comment?: string | null;
+  created_at: string;
 }
 
 export interface SellerOrder extends CustomerOrder {}
@@ -244,6 +253,9 @@ export const api = {
     },
     async getById(id: string) {
       return normalizeProduct(await request<any>(`/products/${id}`));
+    },
+    async listReviews(productId: string, page = 1, limit = 5): Promise<PublicReview[]> {
+      return request<PublicReview[]>(`/products/${productId}/reviews?page=${page}&limit=${limit}`);
     },
     async create(payload: Product, token: string) {
       const imageSource = getImageSourceForPayload(payload);
@@ -424,6 +436,13 @@ export const api = {
     async getReviewNotifications(token: string) {
       return request<ReviewNotification>("/customer/notifications/reviews", {}, token);
     },
+    async requestRefund(orderId: string, refundNote: string | null, token: string) {
+      return request<CustomerOrder>(
+        `/customer/orders/${orderId}/refund`,
+        { method: "POST", body: JSON.stringify({ refund_note: refundNote }) },
+        token
+      );
+    },
   },
   orders: {
     async list(token: string) {
@@ -452,6 +471,12 @@ export const api = {
     async listReviews(token: string, moderation_status?: "pending" | "approved" | "rejected") {
       const suffix = moderation_status ? `?moderation_status=${moderation_status}` : "";
       return request<ProductReview[]>(`/orders/reviews/list${suffix}`, {}, token);
+    },
+    async listRefunds(token: string) {
+      return request<SellerOrder[]>("/orders/refunds", {}, token);
+    },
+    async resolveRefund(orderId: string, token: string) {
+      return request<SellerOrder>(`/orders/${orderId}/refund/resolve`, { method: "PATCH" }, token);
     },
   },
   customization: {
@@ -549,6 +574,32 @@ export const api = {
     },
     async undoFavicon(token: string) {
       return request<{ favicon_url: string }>("/settings/favicon/undo", { method: "POST" }, token);
+    },
+    async uploadWideLogo(file: File, token: string) {
+      const form = new FormData();
+      form.append("file", file);
+      const endpoints = buildApiCandidates("/settings/logo/wide");
+      let lastErrorMessage = "Request failed";
+      let lastStatus = 500;
+      for (const endpoint of endpoints) {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          body: form,
+        });
+        if (response.ok) {
+          return (await response.json()) as { wide_logo_url: string };
+        }
+        lastStatus = response.status;
+        lastErrorMessage = await response.text();
+        if (response.status !== 404) {
+          throw new Error(lastErrorMessage || `Request failed (${response.status})`);
+        }
+      }
+      throw new Error(lastErrorMessage || `Request failed (${lastStatus})`);
+    },
+    async undoWideLogo(token: string) {
+      return request<{ wide_logo_url: string }>("/settings/logo/wide/undo", { method: "POST" }, token);
     },
   },
 };

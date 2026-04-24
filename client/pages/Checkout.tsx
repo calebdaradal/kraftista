@@ -3,8 +3,8 @@ import { useCart } from "@/context/CartContext";
 import { useUser } from "@/context/UserContext";
 import { useState } from "react";
 import { CheckoutModal } from "@/components/CheckoutModal";
-import { Check, Package, Truck, Lock, AlertCircle, Link as LinkIcon } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Check, Package, Truck, Lock, AlertCircle, Link as LinkIcon, ShoppingBag } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
 import { api } from "@/lib/api";
 
 // TODO[TEMP_PAYMENT_BYPASS_REMOVE_BEFORE_LIVE]:
@@ -115,9 +115,6 @@ export default function Checkout() {
       );
       setOrderPlaced(true);
       clearCart();
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 3000);
     } catch (err) {
       setCheckoutError(err instanceof Error ? err.message : "Unable to place order right now.");
     } finally {
@@ -129,7 +126,7 @@ export default function Checkout() {
     return (
       <Layout>
         <section className="py-20">
-          <div className="container mx-auto px-4 text-center">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <div className="space-y-6 max-w-md mx-auto">
               <div className="flex justify-center">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
@@ -145,9 +142,21 @@ export default function Checkout() {
                   shortly.
                 </p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Redirecting you home in a moment...
-              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Link
+                  to="/shop"
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  Back to Shopping
+                </Link>
+                <Link
+                  to="/orders"
+                  className="inline-flex items-center gap-2 rounded-lg border border-border px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:border-primary/40 hover:bg-primary/5"
+                >
+                  View My Orders
+                </Link>
+              </div>
             </div>
           </div>
         </section>
@@ -159,7 +168,7 @@ export default function Checkout() {
     return (
       <Layout>
         <section className="py-20">
-          <div className="container mx-auto px-4 text-center">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <div className="space-y-6">
               <Package className="w-16 h-16 text-muted-foreground mx-auto" />
               <div>
@@ -179,13 +188,13 @@ export default function Checkout() {
 
   return (
     <Layout>
-      <section className="py-12 md:py-16">
-        <div className="container mx-auto px-4">
-          <h1 className="font-display text-3xl font-bold text-foreground mb-8">
+      <section className="py-8 md:py-14">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground mb-6 md:mb-8">
             Checkout
           </h1>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             {/* Order Items */}
             <div className="lg:col-span-2 space-y-6">
               {/* Shipping Info */}

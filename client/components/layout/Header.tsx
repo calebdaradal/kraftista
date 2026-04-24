@@ -7,21 +7,9 @@ import { useUser } from "@/context/UserContext";
 import { CheckoutModal } from "@/components/CheckoutModal";
 import { api } from "@/lib/api";
 import { useSettings } from "@/context/SettingsContext";
+import { SiteLogo } from "@/components/SiteLogo";
 
 export function Header() {
-  const resolveAssetUrl = (assetPath?: string) => {
-    if (!assetPath) return "";
-    if (assetPath.startsWith("http://") || assetPath.startsWith("https://") || assetPath.startsWith("data:")) {
-      return assetPath;
-    }
-    const apiBase =
-      typeof window === "undefined"
-        ? "http://127.0.0.1:8000/api"
-        : import.meta.env.VITE_API_URL ||
-          (import.meta.env.DEV ? "http://127.0.0.1:8000/api" : `${window.location.origin}/api`);
-    const base = apiBase.replace(/\/api\/?$/, "");
-    return `${base}${assetPath.startsWith("/") ? "" : "/"}${assetPath}`;
-  };
   const [isOpen, setIsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -84,33 +72,16 @@ export function Header() {
 
   return (
     <header className="border-b border-border bg-background sticky top-0 z-50">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <Link
-            to="/"
-            className="flex items-center gap-2 group"
-          >
-            {settings.logoUrl ? (
-              <img
-                src={resolveAssetUrl(settings.logoUrl)}
-                alt={`${settings.siteName} logo`}
-                className="max-h-10 w-auto max-w-[9rem] object-contain flex-shrink-0"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center border border-border text-lg font-display font-bold text-foreground">
-                {settings.logo || settings.siteName.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div className="hidden sm:block">
-              <div className="font-display font-bold text-lg text-foreground">
-                {settings.siteName}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Handmade Goods
-              </div>
-            </div>
-          </Link>
+          <SiteLogo
+            label={settings.siteName}
+            sublabel="Handmade Goods"
+            wideImgClass="max-h-12 w-auto max-w-[14rem]"
+            squareImgClass="w-10 h-10"
+            labelClassName="hidden sm:block"
+          />
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">

@@ -2,16 +2,25 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { OrdersSlider } from "@/components/OrdersSlider";
 import { api, type SellerOrder } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
-import { ShoppingBag } from "lucide-react";
+import { Loader2, ShoppingBag } from "lucide-react";
+import { toast } from "sonner";
 
 const looksLikeUrl = (value?: string | null) =>
   !!value && (value.startsWith("http://") || value.startsWith("https://"));
+
+const STATUS_STEPS: { key: "processing" | "shipped" | "delivered"; label: string }[] = [
+  { key: "processing", label: "Processing" },
+  { key: "shipped", label: "Shipped" },
+  { key: "delivered", label: "Delivered" },
+];
 
 export default function Orders() {
   const [orders, setOrders] = useState<SellerOrder[]>([]);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [trackingInput, setTrackingInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSavingTracking, setIsSavingTracking] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   const token = localStorage.getItem("craft_auth_token");
@@ -43,21 +52,29 @@ export default function Orders() {
 
   const handleSaveTracking = async () => {
     if (!token || !selectedOrder) return;
+    setIsSavingTracking(true);
     try {
       const updated = await api.orders.updateTracking(selectedOrder.id, trackingInput.trim() || null, token);
       setOrders((prev) => prev.map((order) => (order.id === updated.id ? updated : order)));
+      toast.success("Tracking reference saved.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update tracking.");
+      toast.error(err instanceof Error ? err.message : "Failed to update tracking.");
+    } finally {
+      setIsSavingTracking(false);
     }
   };
 
   const handleStatusUpdate = async (status: "processing" | "shipped" | "delivered") => {
     if (!token || !selectedOrder) return;
+    setIsUpdatingStatus(status);
     try {
       const updated = await api.orders.updateStatus(selectedOrder.id, status, token);
       setOrders((prev) => prev.map((order) => (order.id === updated.id ? updated : order)));
+      toast.success(`Order marked as ${status}.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update order status.");
+      toast.error(err instanceof Error ? err.message : "Failed to update order status.");
+    } finally {
+      setIsUpdatingStatus(null);
     }
   };
 
@@ -108,14 +125,22 @@ export default function Orders() {
                         value={trackingInput}
                         onChange={(e) => setTrackingInput(e.target.value)}
                         placeholder="Tracking code or full tracking URL"
-                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                       />
                       <button
                         type="button"
                         onClick={handleSaveTracking}
-                        className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                        disabled={isSavingTracking}
+                        className="flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        Save
+                        {isSavingTracking ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Saving…
+                          </>
+                        ) : (
+                          "Save"
+                        )}
                       </button>
                     </div>
                     {looksLikeUrl(selectedOrder.tracking_reference) ? (
@@ -130,16 +155,31 @@ export default function Orders() {
                     ) : null}
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <button type="button" onClick={() => handleStatusUpdate("processing")} className="rounded-lg border border-border px-3 py-2 text-sm">
-                      Mark Processing
-                    </button>
-                    <button type="button" onClick={() => handleStatusUpdate("shipped")} className="rounded-lg border border-border px-3 py-2 text-sm">
-                      Mark Shipped
-                    </button>
-                    <button type="button" onClick={() => handleStatusUpdate("delivered")} className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
-                      Mark Delivered
-                    </button>
+                  <div>
+                    <p className="mb-2 text-xs uppercase text-muted-foreground">Order Status</p>
+                    <div className="flex flex-wrap gap-2">
+                      {STATUS_STEPS.map(({ key, label }) => {
+                        const isActive = selectedOrder.status === key;
+                        const isLoadingThis = isUpdatingStatus === key;
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => handleStatusUpdate(key)}
+                            disabled={!!isUpdatingStatus}
+                            className={[
+                              "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60",
+                              isActive
+                                ? "bg-primary text-primary-foreground ring-2 ring-primary/40 ring-offset-1"
+                                : "border border-border bg-card text-foreground hover:border-primary/40 hover:bg-primary/5",
+                            ].join(" ")}
+                          >
+                            {isLoadingThis && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                            Mark {label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <div className="space-y-3">

@@ -16,7 +16,7 @@ export default function NotFound() {
   return (
     <Layout>
       <section className="flex-1 flex items-center justify-center py-20">
-        <div className="container mx-auto px-4 text-center">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="space-y-6">
             <div className="text-7xl md:text-8xl font-display font-bold text-primary">
               404

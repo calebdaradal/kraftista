@@ -17,12 +17,13 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
 import { useUser } from "@/context/UserContext";
 import { cn } from "@/lib/utils";
-import { api } from "@/lib/api";
+import { api, type PublicReview } from "@/lib/api";
 import type { Product } from "@/types/product";
 
 function ProductSlideContent({ src, variant }: { src: string; variant: "main" | "thumb" }) {
@@ -97,6 +98,12 @@ export default function ProductDetail() {
   const [isNotFound, setIsNotFound] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
 
+  const [reviews, setReviews] = useState<PublicReview[]>([]);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsHasMore, setReviewsHasMore] = useState(true);
+  const REVIEWS_LIMIT = 5;
+
   const slides = useMemo(
     () => (product ? getProductGallerySlides(product) : []),
     [product]
@@ -150,6 +157,38 @@ export default function ProductDetail() {
   }, [id]);
 
   useEffect(() => {
+    if (!id) return;
+    setReviews([]);
+    setReviewsPage(1);
+    setReviewsHasMore(true);
+    setReviewsLoading(true);
+    api.products
+      .listReviews(id, 1, REVIEWS_LIMIT)
+      .then((fetched) => {
+        setReviews(fetched);
+        setReviewsHasMore(fetched.length === REVIEWS_LIMIT);
+      })
+      .catch(() => {})
+      .finally(() => setReviewsLoading(false));
+  }, [id]);
+
+  const loadMoreReviews = async () => {
+    if (!id || reviewsLoading || !reviewsHasMore) return;
+    const nextPage = reviewsPage + 1;
+    setReviewsLoading(true);
+    try {
+      const fetched = await api.products.listReviews(id, nextPage, REVIEWS_LIMIT);
+      setReviews((prev) => [...prev, ...fetched]);
+      setReviewsPage(nextPage);
+      setReviewsHasMore(fetched.length === REVIEWS_LIMIT);
+    } catch {
+      // ignore
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     const token = localStorage.getItem("craft_customer_token");
     if (!id || !user || !token) {
       setIsFavorite(false);
@@ -185,7 +224,7 @@ export default function ProductDetail() {
     return (
       <Layout>
         <section className="py-20 text-center">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <h1 className="text-3xl font-bold text-foreground mb-4">
               Loading Product...
             </h1>
@@ -202,7 +241,7 @@ export default function ProductDetail() {
     return (
       <Layout>
         <section className="py-20 text-center">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <h1 className="text-3xl font-bold text-foreground mb-4">
               Product Not Found
             </h1>
@@ -225,7 +264,7 @@ export default function ProductDetail() {
     return (
       <Layout>
         <section className="py-20 text-center">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <h1 className="text-3xl font-bold text-foreground mb-4">
               Product unavailable
             </h1>
@@ -294,7 +333,7 @@ export default function ProductDetail() {
     <Layout>
       {/* Product Section */}
       <section className="py-12 md:py-16">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 items-start md:grid-cols-2 gap-8 md:gap-12 mb-12">
             {/* Product gallery — main image + thumbnail strip with arrows */}
             <div className="flex w-full max-w-xl flex-col gap-3 md:sticky md:top-24 md:z-10 md:self-start">
@@ -778,46 +817,70 @@ export default function ProductDetail() {
                         Customer Reviews
                       </h3>
                       <p className="text-muted-foreground mb-6">
-                        {product.reviewCount} customers have rated this product
-                        an average of {product.rating} out of 5 stars.
+                        {product.reviewCount > 0
+                          ? `${product.reviewCount} customer${product.reviewCount > 1 ? "s" : ""} rated this product an average of ${Number(product.rating).toFixed(1)} out of 5 stars.`
+                          : "No reviews yet. Be the first to review this product!"}
                       </p>
                     </div>
 
-                    <div className="space-y-4">
-                      {[...Array(3)].map((_, i) => (
-                        <div
-                          key={i}
-                          className="pb-4 border-b border-border last:border-0"
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <p className="font-semibold text-foreground">
-                                Customer Review
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Verified Purchase
-                              </p>
+                    {reviews.length > 0 ? (
+                      <div className="space-y-4">
+                        {reviews.map((review) => (
+                          <div
+                            key={review.id}
+                            className="pb-4 border-b border-border last:border-0"
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div>
+                                <p className="font-semibold text-foreground">
+                                  Verified Purchase
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(review.created_at).toLocaleDateString(undefined, {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  })}
+                                </p>
+                              </div>
+                              <div className="flex gap-0.5">
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                  <Star
+                                    key={s}
+                                    className={`w-4 h-4 ${s <= review.rating ? "fill-primary text-primary" : "text-muted-foreground/30"}`}
+                                  />
+                                ))}
+                              </div>
                             </div>
-                            <div className="flex gap-1">
-                              {[...Array(5)].map((_, j) => (
-                                <Star
-                                  key={j}
-                                  className="w-4 h-4 fill-primary text-primary"
-                                />
-                              ))}
-                            </div>
+                            {review.comment ? (
+                              <p className="text-muted-foreground text-sm">{review.comment}</p>
+                            ) : (
+                              <p className="text-muted-foreground/60 text-sm italic">No comment provided.</p>
+                            )}
                           </div>
-                          <p className="text-muted-foreground text-sm">
-                            This is a great product! Highly recommend to anyone
-                            looking for quality handcrafted items.
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : !reviewsLoading ? (
+                      <div className="rounded-lg border border-border bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+                        No approved reviews yet for this product.
+                      </div>
+                    ) : null}
 
-                    <button className="mt-4 px-6 py-2 border-2 border-primary text-primary rounded-lg font-semibold hover:bg-primary/5 transition-colors">
-                      Load More Reviews
-                    </button>
+                    {reviewsLoading && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Loading reviews…
+                      </div>
+                    )}
+
+                    {reviewsHasMore && !reviewsLoading && reviews.length > 0 && (
+                      <button
+                        onClick={loadMoreReviews}
+                        className="mt-2 px-6 py-2 border-2 border-primary text-primary rounded-lg font-semibold hover:bg-primary/5 transition-colors"
+                      >
+                        Load More Reviews
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

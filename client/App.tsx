@@ -40,6 +40,7 @@ import Analytics from "./pages/dashboard/Analytics";
 import Settings from "./pages/dashboard/Settings";
 import Orders from "./pages/dashboard/Orders";
 import Reviews from "./pages/dashboard/Reviews";
+import Refunds from "./pages/dashboard/Refunds";
 import CustomizeAbout from "./pages/dashboard/CustomizeAbout";
 import CustomizeFooter from "./pages/dashboard/CustomizeFooter";
 import CustomizeHero from "./pages/dashboard/CustomizeHero";
@@ -147,6 +148,14 @@ export default function App() {
                         element={
                           <ProtectedRoute>
                             <Reviews />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/dashboard/refunds"
+                        element={
+                          <ProtectedRoute>
+                            <Refunds />
                           </ProtectedRoute>
                         }
                       />

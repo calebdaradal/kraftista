@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Facebook, Instagram, Twitter, Mail, Linkedin } from "lucide-react";
 import { useCustomization } from "@/context/CustomizationContext";
+import { SiteLogo } from "@/components/SiteLogo";
 
 const SOCIAL_ICONS = {
   facebook: Facebook,
@@ -17,21 +18,18 @@ export function Footer() {
 
   return (
     <footer className="bg-card border-t border-border mt-20">
-      <div className="container mx-auto px-4 py-12 md:py-16">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         {/* Main Footer Content */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-          {/* Brand */}
-          <div className="md:col-span-1">
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
-                <span className="text-white font-display text-lg font-bold">
-                  {footer.brandEmoji || footer.brandName.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div>
-                <div className="font-display font-bold text-foreground">{footer.brandName}</div>
-              </div>
-            </Link>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+          {/* Brand — always full width on xs, then participates in the 2-col / 4-col grid */}
+          <div className="sm:col-span-2 lg:col-span-1">
+            <div className="mb-4">
+              <SiteLogo
+                label={footer.brandName}
+                wideImgClass="max-h-9 w-auto max-w-[11rem]"
+                squareImgClass="w-10 h-10"
+              />
+            </div>
             <p className="text-muted-foreground text-sm">
               {footer.brandTagline}
             </p>

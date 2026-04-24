@@ -51,7 +51,7 @@ export default function Contact() {
     <Layout>
       {/* Hero Section */}
       <section className="py-12 md:py-20 bg-gradient-to-br from-secondary/20 to-primary/10">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-4">
             Get in Touch
           </h1>
@@ -63,7 +63,7 @@ export default function Contact() {
 
       {/* Contact Content */}
       <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             {/* Contact Information */}
             <div className="lg:col-span-1 space-y-6">

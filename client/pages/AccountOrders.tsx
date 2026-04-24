@@ -4,7 +4,8 @@ import { api, type CustomerOrder } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useUser } from "@/context/UserContext";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, RotateCcw, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 const formatCurrency = (value: number) => `$${Number(value || 0).toFixed(2)}`;
 
@@ -19,6 +20,9 @@ export default function AccountOrders() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [refundModal, setRefundModal] = useState<{ open: boolean; orderId: string | null }>({ open: false, orderId: null });
+  const [refundNote, setRefundNote] = useState("");
+  const [isRequestingRefund, setIsRequestingRefund] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("craft_customer_token");
@@ -36,6 +40,23 @@ export default function AccountOrders() {
 
   const selectedOrder = useMemo(() => orders.find((order) => order.id === selectedOrderId) ?? null, [orders, selectedOrderId]);
 
+  const handleRequestRefund = async () => {
+    const token = localStorage.getItem("craft_customer_token");
+    if (!refundModal.orderId || !token) return;
+    setIsRequestingRefund(true);
+    try {
+      const updated = await api.customer.requestRefund(refundModal.orderId, refundNote.trim() || null, token);
+      setOrders((prev) => prev.map((o) => (o.id === updated.id ? (updated as CustomerOrder) : o)));
+      toast.success("Refund request submitted. We'll review it shortly.");
+      setRefundModal({ open: false, orderId: null });
+      setRefundNote("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to request refund.");
+    } finally {
+      setIsRequestingRefund(false);
+    }
+  };
+
   if (!user) {
     return <Navigate to="/" replace />;
   }
@@ -43,7 +64,7 @@ export default function AccountOrders() {
   return (
     <Layout>
       <section className="py-10 md:py-14">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
             <h1 className="font-display text-2xl font-bold text-foreground md:text-3xl">My Orders</h1>
             <p className="text-sm text-muted-foreground md:text-base">Track your outgoing orders and shipment updates.</p>
@@ -68,9 +89,28 @@ export default function AccountOrders() {
                   <div className="space-y-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <h2 className="font-semibold text-foreground">Order Details</h2>
-                      <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium uppercase text-muted-foreground">
-                        {selectedOrder.status}
-                      </span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium uppercase text-muted-foreground">
+                          {selectedOrder.status}
+                        </span>
+                        {selectedOrder.refund_requested ? (
+                          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">
+                            Refund Requested
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRefundNote("");
+                              setRefundModal({ open: true, orderId: selectedOrder.id });
+                            }}
+                            className="flex items-center gap-1.5 rounded-full border border-destructive/30 px-3 py-1 text-xs font-medium text-destructive hover:bg-destructive/5 transition-colors"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                            Request Refund
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -153,6 +193,50 @@ export default function AccountOrders() {
           )}
         </div>
       </section>
+
+      {/* Refund Request Modal */}
+      {refundModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl space-y-4">
+            <div>
+              <h3 className="font-semibold text-foreground text-lg">Request a Refund</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Let us know why you'd like a refund. Our team will review your request.
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Reason <span className="text-muted-foreground/60 text-xs">(optional)</span>
+              </label>
+              <textarea
+                value={refundNote}
+                onChange={(e) => setRefundNote(e.target.value)}
+                placeholder="Describe the issue with your order..."
+                rows={4}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+              />
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setRefundModal({ open: false, orderId: null })}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleRequestRefund}
+                disabled={isRequestingRefund}
+                className="flex items-center gap-2 rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground disabled:opacity-60"
+              >
+                {isRequestingRefund ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                Submit Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
