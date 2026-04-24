@@ -145,6 +145,31 @@ export interface PublicReview {
 
 export interface SellerOrder extends CustomerOrder {}
 
+const ADMIN_TOKEN_KEY = "craft_auth_token";
+const CUSTOMER_TOKEN_KEY = "craft_customer_token";
+
+/**
+ * Called when an authenticated request returns 401.
+ * - Admin token expired  → clear admin session and redirect to /login
+ * - Customer token expired → clear customer session and redirect to / (soft)
+ * Regular 401s from wrong credentials (no token stored) fall through normally.
+ */
+const handleExpiredSession = (isAdminToken: boolean) => {
+  if (isAdminToken) {
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
+    localStorage.removeItem("craft_user");
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+  } else {
+    localStorage.removeItem(CUSTOMER_TOKEN_KEY);
+    localStorage.removeItem("craft_customer_user");
+    if (typeof window !== "undefined") {
+      window.location.href = "/";
+    }
+  }
+};
+
 const request = async <T>(path: string, init: RequestInit = {}, token?: string): Promise<T> => {
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json");
@@ -152,6 +177,19 @@ const request = async <T>(path: string, init: RequestInit = {}, token?: string):
 
   const response = await fetch(`${API_BASE}${path}`, { ...init, headers });
   if (!response.ok) {
+    if (response.status === 401 && token) {
+      // Determine which stored token this matches so we redirect correctly
+      const storedAdminToken = localStorage.getItem(ADMIN_TOKEN_KEY);
+      const storedCustomerToken = localStorage.getItem(CUSTOMER_TOKEN_KEY);
+      const isAdminToken = !!storedAdminToken && token === storedAdminToken;
+      const isCustomerToken = !!storedCustomerToken && token === storedCustomerToken;
+
+      if (isAdminToken || isCustomerToken) {
+        handleExpiredSession(isAdminToken);
+        // Suspend — page will redirect before any error can render
+        return new Promise(() => {});
+      }
+    }
     const message = await response.text();
     throw new Error(message || `Request failed (${response.status})`);
   }
