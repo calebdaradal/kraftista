@@ -14,6 +14,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import Services from "./pages/Services";
 import Shop from "./pages/Shop";
 import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
@@ -44,6 +45,7 @@ import Refunds from "./pages/dashboard/Refunds";
 import CustomizeAbout from "./pages/dashboard/CustomizeAbout";
 import CustomizeFooter from "./pages/dashboard/CustomizeFooter";
 import CustomizeHero from "./pages/dashboard/CustomizeHero";
+import CustomizeServices from "./pages/dashboard/CustomizeServices";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +74,7 @@ export default function App() {
                       <Route path="/account/reviews" element={<AccountReviews />} />
                       <Route path="/about" element={<About />} />
                       <Route path="/contact" element={<Contact />} />
+                      <Route path="/services" element={<Services />} />
 
                       {/* Auth Routes */}
                       <Route path="/login" element={<Login />} />
@@ -196,6 +199,14 @@ export default function App() {
                         element={
                           <ProtectedRoute>
                             <CustomizeHero />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/dashboard/customize/services"
+                        element={
+                          <ProtectedRoute>
+                            <CustomizeServices />
                           </ProtectedRoute>
                         }
                       />

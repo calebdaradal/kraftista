@@ -114,6 +114,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       children: [
         { label: "Hero Section", href: "/dashboard/customize/hero" },
         { label: "About Page", href: "/dashboard/customize/about" },
+        { label: "Services Page", href: "/dashboard/customize/services" },
         { label: "Footer", href: "/dashboard/customize/footer" },
       ],
     },

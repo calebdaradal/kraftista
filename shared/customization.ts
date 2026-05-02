@@ -98,10 +98,33 @@ export interface FooterCustomization {
   }>;
 }
 
+export interface ServicesBullet {
+  id: string;
+  icon: string;
+  title: string;
+  description: string;
+  enabled: boolean;
+}
+
+export interface ServicesCustomization {
+  title: string;
+  titleHighlight: string;
+  subtitle: string;
+  description: string;
+  buttonText: string;
+  buttonLink: string;
+  bulletsEnabled: boolean;
+  bullets: ServicesBullet[];
+  image?: string;
+  imageUrl?: string;
+  imageAlt: string;
+}
+
 export interface SiteCustomization {
   about: AboutCustomization;
   footer: FooterCustomization;
   hero?: HeroCustomization;
+  services?: ServicesCustomization;
 }
 
 // Default customizations
@@ -151,6 +174,42 @@ export const DEFAULT_HERO_CUSTOMIZATION: HeroCustomization = {
     { id: "1", value: "2500+", label: "Happy Customers", enabled: true },
     { id: "2", value: "800+", label: "Products", enabled: true },
   ],
+};
+
+export const DEFAULT_SERVICES_CUSTOMIZATION: ServicesCustomization = {
+  title: "Timeless Craft,",
+  titleHighlight: "Made for You",
+  subtitle: "Explore our handcrafted collection, where tradition meets artistry. Each piece is thoughtfully made using the finest materials and time-honored techniques.",
+  description: "",
+  buttonText: "Inquire now",
+  buttonLink: "/contact",
+  bulletsEnabled: true,
+  bullets: [
+    {
+      id: "1",
+      icon: "award",
+      title: "Premium Quality",
+      description: "Finest materials and meticulous craftsmanship.",
+      enabled: true,
+    },
+    {
+      id: "2",
+      icon: "hand",
+      title: "Handmade with Care",
+      description: "Every piece is uniquely crafted by skilled artisans.",
+      enabled: true,
+    },
+    {
+      id: "3",
+      icon: "package",
+      title: "Worldwide Delivery",
+      description: "Secure packaging and reliable global shipping.",
+      enabled: true,
+    },
+  ],
+  image: undefined,
+  imageUrl: undefined,
+  imageAlt: "Our craftsmanship",
 };
 
 export const DEFAULT_FOOTER_CUSTOMIZATION: FooterCustomization = {
