@@ -2,19 +2,8 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { useCustomization } from "@/context/CustomizationContext";
 import { useSettings } from "@/context/SettingsContext";
+import { resolveAssetUrl } from "@/lib/api";
 import * as Icons from "lucide-react";
-
-const apiBase =
-  typeof window === "undefined"
-    ? "http://127.0.0.1:8000/api"
-    : import.meta.env.VITE_API_URL ||
-      (import.meta.env.DEV ? "http://127.0.0.1:8000/api" : `${window.location.origin}/api`);
-const assetBase = apiBase.replace(/\/api\/?$/, "");
-const resolveUrl = (path?: string) => {
-  if (!path) return "";
-  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("data:")) return path;
-  return `${assetBase}${path.startsWith("/") ? "" : "/"}${path}`;
-};
 
 function getIconComponent(iconName: string) {
   const Icon = (Icons as Record<string, any>)[iconName];
@@ -29,7 +18,21 @@ export function AboutPreview() {
   if (about.previewSectionEnabled === false) return null;
 
   const previewValues = about.values.slice(0, 3);
-  const imageUrl = resolveUrl(about.previewImageUrl || about.previewImage);
+  const imageUrl = (() => {
+    const path = about.previewImageUrl || about.previewImage;
+    if (!path) return "";
+    if (path.startsWith("http")) return path;
+    const base = resolveAssetUrl(path);
+    if (
+      about.previewImageUrl &&
+      !about.previewImageUrl.startsWith("http") &&
+      about.previewImage
+    ) {
+      const sep = base.includes("?") ? "&" : "?";
+      return `${base}${sep}v=${encodeURIComponent(about.previewImage)}`;
+    }
+    return base;
+  })();
 
   return (
     <section className="py-16 md:py-24 bg-card">
@@ -38,11 +41,13 @@ export function AboutPreview() {
           {/* Left - Image or placeholder */}
           <div className="hidden md:flex items-center justify-center">
             {imageUrl ? (
-              <img
-                src={imageUrl}
-                alt={about.previewImageAlt || "About preview"}
-                className="max-h-96 w-auto max-w-full object-contain"
-              />
+              <div className="w-full rounded-2xl overflow-hidden shadow-md">
+                <img
+                  src={imageUrl}
+                  alt={about.previewImageAlt || "About preview"}
+                  className="w-full h-auto max-w-full block"
+                />
+              </div>
             ) : (
               <div className="w-full max-w-xs aspect-square rounded-2xl bg-muted/30 border border-dashed border-border flex items-center justify-center text-muted-foreground text-sm">
                 No preview image set

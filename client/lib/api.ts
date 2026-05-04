@@ -8,6 +8,16 @@ const defaultApiBase =
       ? "http://127.0.0.1:8000/api"
       : `${window.location.origin}/api`;
 const API_BASE = (import.meta.env.VITE_API_URL || defaultApiBase).replace(/\/$/, "");
+
+/** Full URL to a path served from the API origin (e.g. `/api/customization/services/image`). Uses `VITE_API_URL` in production when the UI and API are on different hosts. */
+export function resolveAssetUrl(path?: string | null): string {
+  if (!path) return "";
+  const p = path.trim();
+  if (p.startsWith("http://") || p.startsWith("https://") || p.startsWith("data:")) return p;
+  const base = API_BASE.replace(/\/api\/?$/, "");
+  return `${base}${p.startsWith("/") ? "" : "/"}${p}`;
+}
+
 const buildApiCandidates = (path: string): string[] => {
   const candidates: string[] = [];
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;

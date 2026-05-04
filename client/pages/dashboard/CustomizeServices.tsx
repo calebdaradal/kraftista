@@ -446,7 +446,7 @@ export default function CustomizeServices() {
           <h2 className="font-semibold text-foreground text-lg">Page Image</h2>
           <p className="text-sm text-muted-foreground">
             Full-width image displayed at the bottom of the Services page with rounded corners.
-            Recommended size: 1200×600px or wider.
+            Shown at its natural resolution and aspect ratio.
           </p>
 
           <input
@@ -466,7 +466,7 @@ export default function CustomizeServices() {
                 <img
                   src={imagePreviewUrl}
                   alt={formData.imageAlt || "Services image"}
-                  className="w-full h-52 object-cover"
+                  className="w-full h-auto max-w-full block"
                 />
                 <button
                   type="button"

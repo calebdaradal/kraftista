@@ -1,5 +1,6 @@
 import { Layout } from "@/components/layout/Layout";
 import { useCustomization } from "@/context/CustomizationContext";
+import { resolveAssetUrl } from "@/lib/api";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import * as Icons from "lucide-react";
@@ -10,24 +11,23 @@ function getIconComponent(iconName: string) {
   return Icon || Icons.Star;
 }
 
-const API_BASE =
-  typeof window === "undefined"
-    ? "http://127.0.0.1:8000/api"
-    : import.meta.env.DEV
-      ? "http://127.0.0.1:8000/api"
-      : `${window.location.origin}/api`;
-
 export default function Services() {
   const { services } = useCustomization();
 
   const enabledBullets = services.bullets.filter((b) => b.enabled);
   const showBullets = services.bulletsEnabled && enabledBullets.length > 0;
 
-  const imageUrl = services.imageUrl
-    ? services.imageUrl.startsWith("http")
-      ? services.imageUrl
-      : `${API_BASE.replace(/\/api$/i, "")}/api/customization/services/image`
-    : null;
+  const imageUrl = (() => {
+    if (!services.imageUrl) return null;
+    if (services.imageUrl.startsWith("http")) return services.imageUrl;
+    const base = resolveAssetUrl(services.imageUrl);
+    // Storage URI changes when the image is replaced; bust browser/CDN cache for the stable API path.
+    if (services.image) {
+      const sep = base.includes("?") ? "&" : "?";
+      return `${base}${sep}v=${encodeURIComponent(services.image)}`;
+    }
+    return base;
+  })();
 
   return (
     <Layout>
@@ -105,7 +105,7 @@ export default function Services() {
               <img
                 src={imageUrl}
                 alt={services.imageAlt || "Services"}
-                className="w-full h-64 sm:h-80 md:h-[420px] object-cover"
+                className="w-full h-auto max-w-full block"
               />
             </div>
           </section>
