@@ -589,6 +589,75 @@ export const api = {
       }
       throw new Error(lastErrorMessage || `Request failed (${lastStatus})`);
     },
+    async uploadServicesBulletCarousel(bulletId: string, file: File, token: string) {
+      const form = new FormData();
+      form.append("file", file);
+      const path = `/customization/services/bullet/${encodeURIComponent(bulletId)}/carousel`;
+      const endpoints = buildApiCandidates(path);
+      let lastErrorMessage = "Request failed";
+      let lastStatus = 500;
+      for (const endpoint of endpoints) {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          body: form,
+        });
+        if (response.ok) {
+          return (await response.json()) as { carousel_image_url: string; carousel_image: string };
+        }
+        lastStatus = response.status;
+        lastErrorMessage = await response.text();
+        if (response.status !== 404) {
+          throw new Error(lastErrorMessage || `Request failed (${response.status})`);
+        }
+      }
+      throw new Error(lastErrorMessage || `Request failed (${lastStatus})`);
+    },
+    async deleteServicesBulletCarousel(bulletId: string, token: string) {
+      await request<void>(
+        `/customization/services/bullet/${encodeURIComponent(bulletId)}/carousel`,
+        { method: "DELETE" },
+        token
+      );
+    },
+    async uploadServicesBulletIcon(bulletId: string, file: File, token: string) {
+      const form = new FormData();
+      form.append("file", file);
+      const path = `/customization/services/bullet/${encodeURIComponent(bulletId)}/icon`;
+      const endpoints = buildApiCandidates(path);
+      let lastErrorMessage = "Request failed";
+      let lastStatus = 500;
+      for (const endpoint of endpoints) {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          body: form,
+        });
+        if (response.ok) {
+          return (await response.json()) as { bullet_image_url: string; bullet_image: string };
+        }
+        lastStatus = response.status;
+        lastErrorMessage = await response.text();
+        if (response.status !== 404) {
+          throw new Error(lastErrorMessage || `Request failed (${response.status})`);
+        }
+      }
+      throw new Error(lastErrorMessage || `Request failed (${lastStatus})`);
+    },
+    async deleteServicesBulletIcon(bulletId: string, token: string) {
+      await request<void>(
+        `/customization/services/bullet/${encodeURIComponent(bulletId)}/icon`,
+        { method: "DELETE" },
+        token
+      );
+    },
+    async deleteServicesBullet(bulletId: string, token: string) {
+      await request<void>(
+        `/customization/services/bullet/${encodeURIComponent(bulletId)}`,
+        { method: "DELETE" },
+        token
+      );
+    },
   },
   settings: {
     async get() {

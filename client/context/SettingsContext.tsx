@@ -233,7 +233,19 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, uploadFavicon, uploadLogo, undoLogo, undoFavicon, uploadWideLogo, undoWideLogo, refreshSettings }}>
+    <SettingsContext.Provider
+      value={{
+        settings,
+        updateSettings,
+        uploadFavicon,
+        uploadLogo,
+        undoLogo,
+        undoFavicon,
+        uploadWideLogo,
+        undoWideLogo,
+        refreshSettings,
+      }}
+    >
       {children}
     </SettingsContext.Provider>
   );

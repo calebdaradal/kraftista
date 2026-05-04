@@ -6,7 +6,16 @@ import { useSettings } from "@/context/SettingsContext";
 import { toast } from "sonner";
 
 export default function Settings() {
-  const { settings: globalSettings, updateSettings, uploadFavicon, uploadLogo, undoLogo, undoFavicon, uploadWideLogo, undoWideLogo } = useSettings();
+  const {
+    settings: globalSettings,
+    updateSettings,
+    uploadFavicon,
+    uploadLogo,
+    undoLogo,
+    undoFavicon,
+    uploadWideLogo,
+    undoWideLogo,
+  } = useSettings();
   const [settings, setSettings] = useState(globalSettings);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [pendingWideLogoFile, setPendingWideLogoFile] = useState<File | null>(null);

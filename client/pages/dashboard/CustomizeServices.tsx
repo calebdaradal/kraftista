@@ -2,7 +2,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { IconSelector } from "@/components/IconSelector";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { useCustomization } from "@/context/CustomizationContext";
-import { useState, useRef } from "react";
+import { useState, type ComponentType } from "react";
 import {
   Plus,
   Trash2,
@@ -12,29 +12,26 @@ import {
   X,
   Loader2,
   ArrowRight,
+  ImageIcon,
 } from "lucide-react";
 import type { ServicesBullet } from "@shared/customization";
-import { api } from "@/lib/api";
+import { DEFAULT_SERVICES_CUSTOMIZATION } from "@shared/customization";
+import { api, resolveAssetUrl } from "@/lib/api";
 import { toast } from "sonner";
 import * as Icons from "lucide-react";
 
-const apiBase =
-  typeof window === "undefined"
-    ? "http://127.0.0.1:8000/api"
-    : import.meta.env.VITE_API_URL ||
-      (import.meta.env.DEV ? "http://127.0.0.1:8000/api" : `${window.location.origin}/api`);
-const assetBase = apiBase.replace(/\/api\/?$/, "");
-const resolveUrl = (path?: string) => {
-  if (!path) return "";
-  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("data:"))
-    return path;
-  return `${assetBase}${path.startsWith("/") ? "" : "/"}${path}`;
-};
-
 function getIconComponent(iconName: string) {
   const key = iconName.charAt(0).toUpperCase() + iconName.slice(1);
-  const Icon = (Icons as Record<string, any>)[key];
-  return Icon || Icons.Star;
+  const Icon = (Icons as Record<string, unknown>)[key];
+  return (typeof Icon === "function" ? Icon : Icons.Star) as ComponentType<{ className?: string }>;
+}
+
+function cacheBustResolved(path: string | undefined, storageRef: string | undefined) {
+  const base = resolveAssetUrl(path || "");
+  if (!base) return "";
+  if (!storageRef) return base;
+  const sep = base.includes("?") ? "&" : "?";
+  return `${base}${sep}v=${encodeURIComponent(storageRef)}`;
 }
 
 function Toggle({
@@ -75,22 +72,16 @@ export default function CustomizeServices() {
   const { services, updateServices, resetServices } = useCustomization();
   const [formData, setFormData] = useState(services);
   const [saving, setSaving] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
-  // Separate display URL so we can add a cache-buster after replacement
-  // without polluting the data that gets saved.
-  const [displayImageUrl, setDisplayImageUrl] = useState<string | null>(
-    services.imageUrl ? resolveUrl(services.imageUrl) : null
-  );
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async () => {
     setSaving(true);
     try {
       await updateServices(formData);
       toast.success("Services page saved!");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to save.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to save.");
     } finally {
       setSaving(false);
     }
@@ -100,41 +91,10 @@ export default function CustomizeServices() {
     setConfirmReset(false);
     try {
       await resetServices();
-      setFormData(services);
-      setDisplayImageUrl(null);
+      setFormData({ ...DEFAULT_SERVICES_CUSTOMIZATION });
       toast.success("Services page reset to defaults.");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to reset.");
-    }
-  };
-
-  const handleImageUpload = async (file: File) => {
-    const token = localStorage.getItem("craft_auth_token");
-    if (!token) {
-      toast.error("You must be logged in to upload images.");
-      return;
-    }
-    setUploadingImage(true);
-    try {
-      const result = await api.customization.uploadServicesImage(file, token);
-      // The upload endpoint already persists the Supabase URI to the DB.
-      // We only store the stable API path in formData so the save round-trip
-      // doesn't accidentally overwrite the Supabase URI (the backend PUT now
-      // guards this too). A timestamp cache-buster is kept in displayImageUrl
-      // so the browser actually re-fetches the new image.
-      const cacheBustedUrl = `${resolveUrl(result.image_url)}?t=${Date.now()}`;
-      setDisplayImageUrl(cacheBustedUrl);
-      setFormData((prev) => ({
-        ...prev,
-        image: result.image_url,
-        imageUrl: result.image_url,
-      }));
-      toast.success("Image uploaded!");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to upload image.");
-    } finally {
-      setUploadingImage(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to reset.");
     }
   };
 
@@ -156,36 +116,132 @@ export default function CustomizeServices() {
     }));
   };
 
-  const deleteBullet = (id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      bullets: prev.bullets.filter((b) => b.id !== id),
-    }));
+  const deleteBullet = async (id: string) => {
+    const token = localStorage.getItem("craft_auth_token");
+    if (!token) {
+      toast.error("You must be logged in.");
+      return;
+    }
+    try {
+      await api.customization.deleteServicesBullet(id, token);
+      setFormData((prev) => ({
+        ...prev,
+        bullets: prev.bullets.filter((b) => b.id !== id),
+      }));
+      toast.success("Bullet removed.");
+    } catch {
+      toast.error("Failed to delete bullet.");
+    }
   };
 
-  const imagePreviewUrl = displayImageUrl;
+  const handleCarouselUpload = async (bulletId: string, file: File) => {
+    const token = localStorage.getItem("craft_auth_token");
+    if (!token) {
+      toast.error("You must be logged in to upload.");
+      return;
+    }
+    setUploadingKey(`${bulletId}-carousel`);
+    try {
+      const res = await api.customization.uploadServicesBulletCarousel(bulletId, file, token);
+      setFormData((prev) => ({
+        ...prev,
+        bullets: prev.bullets.map((b) =>
+          b.id === bulletId
+            ? { ...b, carouselImage: res.carousel_image, carouselImageUrl: res.carousel_image_url }
+            : b,
+        ),
+      }));
+      toast.success("Carousel image saved.");
+    } catch {
+      toast.error(
+        "Failed to upload carousel image. If you just added this bullet, click Save Changes first, then try again.",
+      );
+    } finally {
+      setUploadingKey(null);
+    }
+  };
+
+  const handleCarouselRemove = async (bulletId: string) => {
+    const token = localStorage.getItem("craft_auth_token");
+    if (!token) return;
+    try {
+      await api.customization.deleteServicesBulletCarousel(bulletId, token);
+      setFormData((prev) => ({
+        ...prev,
+        bullets: prev.bullets.map((b) =>
+          b.id === bulletId ? { ...b, carouselImage: undefined, carouselImageUrl: undefined } : b,
+        ),
+      }));
+      toast.success("Carousel image removed.");
+    } catch {
+      toast.error("Failed to remove carousel image.");
+    }
+  };
+
+  const handleIconUpload = async (bulletId: string, file: File) => {
+    const token = localStorage.getItem("craft_auth_token");
+    if (!token) {
+      toast.error("You must be logged in.");
+      return;
+    }
+    setUploadingKey(`${bulletId}-icon`);
+    try {
+      const res = await api.customization.uploadServicesBulletIcon(bulletId, file, token);
+      setFormData((prev) => ({
+        ...prev,
+        bullets: prev.bullets.map((b) =>
+          b.id === bulletId ? { ...b, bulletImage: res.bullet_image, bulletImageUrl: res.bullet_image_url } : b,
+        ),
+      }));
+      toast.success("Custom icon saved.");
+    } catch {
+      toast.error(
+        "Failed to upload icon. If you just added this bullet, click Save Changes first, then try again.",
+      );
+    } finally {
+      setUploadingKey(null);
+    }
+  };
+
+  const handleIconRemove = async (bulletId: string) => {
+    const token = localStorage.getItem("craft_auth_token");
+    if (!token) return;
+    try {
+      await api.customization.deleteServicesBulletIcon(bulletId, token);
+      setFormData((prev) => ({
+        ...prev,
+        bullets: prev.bullets.map((b) =>
+          b.id === bulletId ? { ...b, bulletImage: undefined, bulletImageUrl: undefined } : b,
+        ),
+      }));
+      toast.success("Custom icon removed.");
+    } catch {
+      toast.error("Failed to remove icon.");
+    }
+  };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl font-bold text-foreground sm:text-3xl">
               Customize Services Page
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Edit the Services page shown between Home and Shop in the navigation
+              Bullets sync with carousel slides — set a carousel image per feature.
             </p>
           </div>
           <div className="flex gap-2 shrink-0">
             <button
+              type="button"
               onClick={() => setConfirmReset(true)}
               className="px-4 py-2 rounded-lg border border-destructive text-destructive hover:bg-destructive/10 transition-colors text-sm font-medium"
             >
               Reset
             </button>
             <button
+              type="button"
               onClick={handleSave}
               disabled={saving}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-60"
@@ -196,7 +252,6 @@ export default function CustomizeServices() {
           </div>
         </div>
 
-        {/* Title & Subtitle */}
         <div className="rounded-xl border border-border bg-card p-6 space-y-5">
           <h2 className="font-semibold text-foreground text-lg">Title &amp; Subtitle</h2>
 
@@ -210,14 +265,9 @@ export default function CustomizeServices() {
                 placeholder="Timeless Craft,"
                 className="w-full mt-1.5 px-3 py-2 rounded-lg border border-border bg-background text-sm"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Displayed in the default text color
-              </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">
-                Title Highlight (second line)
-              </label>
+              <label className="text-sm font-medium text-foreground">Title Highlight (second line)</label>
               <input
                 type="text"
                 value={formData.titleHighlight}
@@ -227,9 +277,6 @@ export default function CustomizeServices() {
                 placeholder="Made for You"
                 className="w-full mt-1.5 px-3 py-2 rounded-lg border border-border bg-background text-sm"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Displayed in your primary brand color
-              </p>
             </div>
           </div>
 
@@ -240,32 +287,49 @@ export default function CustomizeServices() {
               onChange={(e) => setFormData((prev) => ({ ...prev, subtitle: e.target.value }))}
               rows={3}
               placeholder="Explore our handcrafted collection…"
-              className="w-full mt-1.5 px-3 py-2 rounded-lg border border-border bg-background text-sm resize-none"
+              className="w-full mt-1.5 px-3 py-2 rounded-lg border border-border bg-background text-sm resize-y min-h-[80px]"
             />
           </div>
 
-          {/* Live Preview */}
+          <div>
+            <label className="text-sm font-medium text-foreground">Main body</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+              rows={5}
+              placeholder="Optional longer text shown under the subtitle. Press Enter for new paragraphs."
+              className="w-full mt-1.5 px-3 py-2 rounded-lg border border-border bg-background text-sm resize-y whitespace-pre-wrap"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Line breaks you add here appear on the public Services page.
+            </p>
+          </div>
+
           <div className="rounded-lg border border-border bg-muted/20 p-4">
             <p className="text-xs text-muted-foreground uppercase font-semibold mb-3">Preview</p>
-            <h1 className="font-display text-3xl font-bold leading-tight text-foreground">
-              {formData.title && <span>{formData.title}</span>}
-              {formData.titleHighlight && (
-                <>
-                  {formData.title && <br />}
-                  <span className="text-primary">{formData.titleHighlight}</span>
-                </>
-              )}
+            <h1 className="font-display text-3xl font-bold text-foreground">
+              {formData.title ? (
+                <span className="block leading-tight text-foreground">{formData.title}</span>
+              ) : null}
+              {formData.titleHighlight ? (
+                <span
+                  className={`block text-[0.6em] text-primary font-bold leading-tight ${formData.title ? "mt-1" : ""}`}
+                >
+                  {formData.titleHighlight}
+                </span>
+              ) : null}
             </h1>
             {formData.subtitle && (
-              <p className="mt-2 text-sm text-muted-foreground max-w-sm">{formData.subtitle}</p>
+              <p className="mt-2 text-base text-muted-foreground max-w-prose">{formData.subtitle}</p>
+            )}
+            {formData.description && (
+              <p className="mt-2 text-sm text-muted-foreground whitespace-pre-line max-w-prose">{formData.description}</p>
             )}
           </div>
         </div>
 
-        {/* CTA Button */}
         <div className="rounded-xl border border-border bg-card p-6 space-y-4">
           <h2 className="font-semibold text-foreground text-lg">Call-to-Action Button</h2>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-foreground">Button Text</label>
@@ -286,13 +350,8 @@ export default function CustomizeServices() {
                 placeholder="/contact"
                 className="w-full mt-1.5 px-3 py-2 rounded-lg border border-border bg-background text-sm"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Use a path like /contact or a full URL
-              </p>
             </div>
           </div>
-
-          {/* Button Preview */}
           {formData.buttonText && (
             <div className="rounded-lg border border-border bg-muted/20 p-4">
               <p className="text-xs text-muted-foreground uppercase font-semibold mb-3">Preview</p>
@@ -304,24 +363,31 @@ export default function CustomizeServices() {
           )}
         </div>
 
-        {/* Feature Bullets */}
         <div className="rounded-xl border border-border bg-card p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-foreground text-lg">Feature Bullets</h2>
+            <h2 className="font-semibold text-foreground text-lg">Feature Bullets &amp; Carousel</h2>
             <Toggle
               value={formData.bulletsEnabled}
               onChange={(v) => setFormData((prev) => ({ ...prev, bulletsEnabled: v }))}
-              label="Show bullets"
+              label="Show section"
             />
           </div>
-          <p className="text-sm text-muted-foreground">
-            Icon cards shown between the CTA button and the image. Toggle the section or individual
-            bullets on/off.
+          <p className="text-sm text-muted-foreground mt-1">
+            Each enabled bullet appears as a card; visitors click a card to jump to its carousel slide. Upload a
+            transparent PNG for the small icon, and a larger image for the carousel (also supports PNG with alpha).
+            <span className="block mt-2 font-medium text-foreground">
+              After adding a new bullet, click Save Changes once before uploading images for it.
+            </span>
           </p>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {formData.bullets.map((bullet) => {
               const BulletIcon = getIconComponent(bullet.icon);
+              const iconPreview = cacheBustResolved(bullet.bulletImageUrl, bullet.bulletImage);
+              const carouselPreview = cacheBustResolved(bullet.carouselImageUrl, bullet.carouselImage);
+              const busyCar = uploadingKey === `${bullet.id}-carousel`;
+              const busyIcon = uploadingKey === `${bullet.id}-icon`;
+
               return (
                 <div
                   key={bullet.id}
@@ -330,7 +396,6 @@ export default function CustomizeServices() {
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    {/* Enabled toggle */}
                     <button
                       type="button"
                       onClick={() => updateBullet(bullet.id, "enabled", !bullet.enabled)}
@@ -346,16 +411,17 @@ export default function CustomizeServices() {
                       />
                     </button>
 
-                    <div className="flex-1 space-y-3">
-                      <div className="flex items-center gap-3">
-                        {/* Icon picker */}
-                        <div className="flex-shrink-0">
-                          <label className="text-xs font-medium text-muted-foreground block mb-1">
-                            Icon
-                          </label>
+                    <div className="flex-1 space-y-4 min-w-0">
+                      <div className="flex flex-wrap gap-4">
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground block mb-1">Lucide fallback</label>
                           <div className="flex items-center gap-2">
-                            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                              <BulletIcon className="w-5 h-5 text-primary" />
+                            <div className="w-10 h-10 flex items-center justify-center overflow-hidden">
+                              {bullet.bulletImageUrl && bullet.bulletImage && iconPreview ? (
+                                <img src={iconPreview} alt="" className="max-w-full max-h-full object-contain" />
+                              ) : (
+                                <BulletIcon className="w-5 h-5 text-primary" />
+                              )}
                             </div>
                             <IconSelector
                               value={bullet.icon}
@@ -363,41 +429,109 @@ export default function CustomizeServices() {
                             />
                           </div>
                         </div>
-
-                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 min-w-0">
                           <div>
-                            <label className="text-xs font-medium text-muted-foreground">
-                              Title
-                            </label>
+                            <label className="text-xs font-medium text-muted-foreground">Title</label>
                             <input
                               type="text"
                               value={bullet.title}
                               onChange={(e) => updateBullet(bullet.id, "title", e.target.value)}
-                              placeholder="Feature title"
                               className="w-full mt-1 px-2 py-1.5 rounded-lg border border-border bg-background text-sm"
                             />
                           </div>
                           <div>
-                            <label className="text-xs font-medium text-muted-foreground">
-                              Description
-                            </label>
+                            <label className="text-xs font-medium text-muted-foreground">Description</label>
                             <input
                               type="text"
                               value={bullet.description}
-                              onChange={(e) =>
-                                updateBullet(bullet.id, "description", e.target.value)
-                              }
-                              placeholder="Short description"
+                              onChange={(e) => updateBullet(bullet.id, "description", e.target.value)}
                               className="w-full mt-1 px-2 py-1.5 rounded-lg border border-border bg-background text-sm"
                             />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="rounded-lg border border-border p-3 space-y-2">
+                          <p className="text-xs font-semibold text-foreground flex items-center gap-1">
+                            <ImageIcon className="w-3.5 h-3.5" /> Custom bullet image
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <label className="cursor-pointer">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                disabled={busyIcon}
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (f) handleIconUpload(bullet.id, f);
+                                  e.target.value = "";
+                                }}
+                              />
+                              <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border text-xs font-medium hover:bg-muted">
+                                {busyIcon ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                                Upload
+                              </span>
+                            </label>
+                            {bullet.bulletImageUrl && (
+                              <button
+                                type="button"
+                                onClick={() => handleIconRemove(bullet.id)}
+                                className="text-xs text-destructive hover:underline"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="rounded-lg border border-border p-3 space-y-2">
+                          <p className="text-xs font-semibold text-foreground">Carousel slide</p>
+                          {carouselPreview ? (
+                            <div className="relative rounded-md overflow-hidden border border-border bg-muted/40 max-h-32">
+                              <img src={carouselPreview} alt="" className="w-full h-28 object-contain" />
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">No slide image — optional placeholder on site.</p>
+                          )}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <label className="cursor-pointer">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                disabled={busyCar}
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (f) handleCarouselUpload(bullet.id, f);
+                                  e.target.value = "";
+                                }}
+                              />
+                              <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border text-xs font-medium hover:bg-muted">
+                                {busyCar ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                                Upload / replace
+                              </span>
+                            </label>
+                            {bullet.carouselImageUrl && (
+                              <button
+                                type="button"
+                                onClick={() => handleCarouselRemove(bullet.id)}
+                                className="text-xs text-destructive hover:underline"
+                              >
+                                Remove from carousel
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
                     </div>
 
                     <button
+                      type="button"
                       onClick={() => deleteBullet(bullet.id)}
                       className="mt-1 p-1.5 text-destructive hover:bg-destructive/10 rounded-lg transition-colors flex-shrink-0"
+                      title="Delete bullet"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -408,6 +542,7 @@ export default function CustomizeServices() {
           </div>
 
           <button
+            type="button"
             onClick={addBullet}
             className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border hover:bg-muted transition-colors text-sm text-muted-foreground w-full justify-center"
           >
@@ -415,24 +550,28 @@ export default function CustomizeServices() {
             Add Bullet
           </button>
 
-          {/* Bullets Preview */}
           {formData.bulletsEnabled && formData.bullets.some((b) => b.enabled) && (
             <div className="rounded-lg border border-border bg-muted/20 p-4">
-              <p className="text-xs text-muted-foreground uppercase font-semibold mb-3">Preview</p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <p className="text-xs text-muted-foreground uppercase font-semibold mb-3">Preview order</p>
+              <div className="flex flex-wrap gap-2">
                 {formData.bullets
                   .filter((b) => b.enabled)
                   .map((bullet) => {
                     const BIcon = getIconComponent(bullet.icon);
+                    const ip = cacheBustResolved(bullet.bulletImageUrl, bullet.bulletImage);
                     return (
-                      <div key={bullet.id} className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <BIcon className="w-4 h-4 text-primary" />
+                      <div
+                        key={bullet.id}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border border-border text-sm"
+                      >
+                        <div className="w-7 h-7 flex items-center justify-center overflow-hidden">
+                          {ip ? (
+                            <img src={ip} alt="" className="max-w-full max-h-full object-contain" />
+                          ) : (
+                            <BIcon className="w-4 h-4 text-primary" />
+                          )}
                         </div>
-                        <div>
-                          <p className="text-sm font-semibold text-foreground">{bullet.title}</p>
-                          <p className="text-xs text-muted-foreground">{bullet.description}</p>
-                        </div>
+                        <span className="font-medium text-foreground truncate max-w-[140px]">{bullet.title}</span>
                       </div>
                     );
                   })}
@@ -441,97 +580,26 @@ export default function CustomizeServices() {
           )}
         </div>
 
-        {/* Image */}
-        <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-          <h2 className="font-semibold text-foreground text-lg">Page Image</h2>
+        <div className="rounded-xl border border-border bg-card p-6 space-y-2">
+          <h2 className="font-semibold text-foreground text-lg">Legacy / SEO</h2>
           <p className="text-sm text-muted-foreground">
-            Full-width image displayed at the bottom of the Services page with rounded corners.
-            Shown at its natural resolution and aspect ratio.
+            If you still use the old single “services” image in your data, it appears as the first slide when a bullet has
+            no carousel image. Alt text below applies to that legacy image and as a general fallback label.
           </p>
-
+          <label className="text-sm font-medium text-foreground">Default / legacy image alt text</label>
           <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleImageUpload(file);
-            }}
+            type="text"
+            value={formData.imageAlt}
+            onChange={(e) => setFormData((prev) => ({ ...prev, imageAlt: e.target.value }))}
+            className="w-full mt-1.5 px-3 py-2 rounded-lg border border-border bg-background text-sm"
           />
-
-          {imagePreviewUrl ? (
-            <div className="space-y-3">
-              <div className="relative rounded-xl overflow-hidden border border-border">
-                <img
-                  src={imagePreviewUrl}
-                  alt={formData.imageAlt || "Services image"}
-                  className="w-full h-auto max-w-full block"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFormData((prev) => ({ ...prev, image: undefined, imageUrl: undefined }));
-                    setDisplayImageUrl(null);
-                  }}
-                  className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-lg hover:bg-black/80 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingImage}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors text-sm font-medium disabled:opacity-60"
-              >
-                {uploadingImage ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Upload className="w-4 h-4" />
-                )}
-                {uploadingImage ? "Uploading…" : "Replace Image"}
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingImage}
-              className="flex flex-col items-center justify-center w-full h-40 rounded-xl border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-colors gap-3 disabled:opacity-60"
-            >
-              {uploadingImage ? (
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-              ) : (
-                <Upload className="w-8 h-8 text-muted-foreground" />
-              )}
-              <span className="text-sm text-muted-foreground">
-                {uploadingImage ? "Uploading…" : "Click to upload image"}
-              </span>
-              <span className="text-xs text-muted-foreground">PNG, JPG, WEBP up to 5MB</span>
-            </button>
-          )}
-
-          <div>
-            <label className="text-sm font-medium text-foreground">Image Alt Text</label>
-            <input
-              type="text"
-              value={formData.imageAlt}
-              onChange={(e) => setFormData((prev) => ({ ...prev, imageAlt: e.target.value }))}
-              placeholder="Our craftsmanship"
-              className="w-full mt-1.5 px-3 py-2 rounded-lg border border-border bg-background text-sm"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Describes the image for screen readers and SEO
-            </p>
-          </div>
         </div>
       </div>
 
       <ConfirmModal
         open={confirmReset}
         title="Reset Services Page?"
-        message="This will restore all Services page content to its default values."
+        message="This restores default text and bullets to the server. Custom images in storage are cleaned up automatically."
         confirmLabel="Reset to Defaults"
         variant="danger"
         onConfirm={handleReset}

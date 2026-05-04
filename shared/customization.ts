@@ -104,6 +104,12 @@ export interface ServicesBullet {
   title: string;
   description: string;
   enabled: boolean;
+  /** Small graphic (PNG with transparency OK); Supabase URI in persisted data */
+  bulletImage?: string;
+  bulletImageUrl?: string;
+  /** Full-width carousel slide for this bullet when enabled */
+  carouselImage?: string;
+  carouselImageUrl?: string;
 }
 
 export interface ServicesCustomization {
@@ -115,6 +121,7 @@ export interface ServicesCustomization {
   buttonLink: string;
   bulletsEnabled: boolean;
   bullets: ServicesBullet[];
+  /** @deprecated Legacy single-page image — use bullet carousel slides */
   image?: string;
   imageUrl?: string;
   imageAlt: string;
