@@ -52,17 +52,10 @@ export interface AboutCustomization {
   previewTitle: string;
 }
 
-export interface HeroStat {
-  id: string;
-  value: string;
-  label: string;
-  enabled: boolean;
-}
-
 export interface HeroCustomization {
-  headline: string;
-  statsEnabled: boolean;
-  stats: HeroStat[];
+  image?: string;
+  imageUrl: string;
+  imageAlt: string;
 }
 
 export interface FooterLink {
@@ -175,12 +168,9 @@ export const DEFAULT_ABOUT_CUSTOMIZATION: AboutCustomization = {
 };
 
 export const DEFAULT_HERO_CUSTOMIZATION: HeroCustomization = {
-  headline: "Discover Handcrafted\nTreasures",
-  statsEnabled: true,
-  stats: [
-    { id: "1", value: "2500+", label: "Happy Customers", enabled: true },
-    { id: "2", value: "800+", label: "Products", enabled: true },
-  ],
+  image: undefined,
+  imageUrl: "/HeaderImage.png",
+  imageAlt: "Kraftista handcrafted and personalized gifts",
 };
 
 export const DEFAULT_SERVICES_CUSTOMIZATION: ServicesCustomization = {

@@ -125,13 +125,10 @@ export function CustomizationProvider({ children }: { children: React.ReactNode 
       console.error("Failed to save hero customization:", error);
     }
     const token = localStorage.getItem("craft_auth_token");
-    if (token) {
-      try {
-        await api.customization.updateHero(newHero, token);
-      } catch (error) {
-        console.error("Failed to save hero customization to server:", error);
-      }
+    if (!token) {
+      throw new Error("You must be logged in to update the hero image.");
     }
+    await api.customization.updateHero(newHero, token);
   };
 
   const updateServices = async (newServices: ServicesCustomization) => {

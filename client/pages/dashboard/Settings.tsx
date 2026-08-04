@@ -187,7 +187,7 @@ export default function Settings() {
                 </div>
 
                 <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 text-sm text-muted-foreground">
-                  Hero headline and stats are managed in{" "}
+                  The homepage hero image is managed in{" "}
                   <a href="/dashboard/customize/hero" className="text-primary font-semibold hover:underline">
                     Customize → Hero Section
                   </a>

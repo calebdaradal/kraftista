@@ -1,246 +1,174 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useCustomization } from "@/context/CustomizationContext";
-import { useState } from "react";
-import { Plus, Trash2, Eye, EyeOff, Loader2 } from "lucide-react";
-import type { HeroStat } from "@shared/customization";
+import { api, resolveAssetUrl } from "@/lib/api";
+import { DEFAULT_HERO_CUSTOMIZATION } from "@shared/customization";
+import { ImageIcon, Loader2, RotateCcw, Save, Upload } from "lucide-react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+function getHeroImageUrl(imageUrl: string, imageRef?: string) {
+  const resolved = imageUrl.startsWith("/api/") ? resolveAssetUrl(imageUrl) : imageUrl;
+  if (!imageRef || !resolved) return resolved;
+  return `${resolved}${resolved.includes("?") ? "&" : "?"}v=${encodeURIComponent(imageRef)}`;
+}
+
 export default function CustomizeHero() {
-  const { hero, updateHero, resetHero } = useCustomization();
+  const { hero, updateHero } = useCustomization();
   const [formData, setFormData] = useState(hero);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => setFormData(hero), [hero]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
       await updateHero(formData);
-      toast.success("Hero section saved!");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to save.");
+      toast.success("Hero image settings saved.");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to save hero settings.");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleReset = async () => {
-    setConfirmReset(false);
+  const handleUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const token = localStorage.getItem("craft_auth_token");
+    if (!token) {
+      toast.error("You must be logged in to upload a hero image.");
+      return;
+    }
+
+    setUploading(true);
     try {
-      await resetHero();
-      setFormData(hero);
-      toast.success("Hero section reset to defaults.");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to reset.");
+      const result = await api.customization.uploadHeroImage(file, token);
+      const next = { ...formData, image: result.image, imageUrl: result.image_url };
+      setFormData(next);
+      await updateHero(next);
+      toast.success("Hero image replaced.");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to upload hero image.");
+    } finally {
+      setUploading(false);
     }
   };
 
-  const addStat = () => {
-    const newStat: HeroStat = {
-      id: Date.now().toString(),
-      value: "100+",
-      label: "New Stat",
-      enabled: true,
-    };
-    setFormData((prev) => ({ ...prev, stats: [...prev.stats, newStat] }));
+  const handleReset = async () => {
+    setConfirmReset(false);
+    const token = localStorage.getItem("craft_auth_token");
+    if (!token) {
+      toast.error("You must be logged in to reset the hero image.");
+      return;
+    }
+
+    setResetting(true);
+    try {
+      await api.customization.deleteHeroImage(token);
+      await updateHero(DEFAULT_HERO_CUSTOMIZATION);
+      setFormData(DEFAULT_HERO_CUSTOMIZATION);
+      toast.success("Default hero image restored.");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to restore the default hero image.");
+    } finally {
+      setResetting(false);
+    }
   };
 
-  const updateStat = (id: string, field: keyof HeroStat, value: string | boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      stats: prev.stats.map((s) => (s.id === id ? { ...s, [field]: value } : s)),
-    }));
-  };
-
-  const deleteStat = (id: string) => {
-    setFormData((prev) => ({ ...prev, stats: prev.stats.filter((s) => s.id !== id) }));
-  };
+  const previewUrl = getHeroImageUrl(formData.imageUrl || "/HeaderImage.png", formData.image);
+  const busy = saving || uploading || resetting;
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="font-display text-2xl font-bold text-foreground sm:text-3xl">Customize Hero Section</h1>
-            <p className="text-sm text-muted-foreground">
-              Edit the homepage hero banner headline and social proof stats
-            </p>
+            <h1 className="font-display text-2xl font-bold text-foreground sm:text-3xl">Customize Hero Image</h1>
+            <p className="text-sm text-muted-foreground">Manage the full-width image shown at the top of the homepage.</p>
           </div>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={() => setConfirmReset(true)}
-              className="px-4 py-2 rounded-lg border border-destructive text-destructive hover:bg-destructive/10 transition-colors text-sm font-medium"
+              disabled={busy}
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-60"
             >
-              Reset
+              <RotateCcw className="h-4 w-4" />
+              Restore Default
             </button>
             <button
+              type="button"
               onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-60"
+              disabled={busy}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
             >
-              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              {saving ? "Saving…" : "Save Changes"}
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save
             </button>
           </div>
         </div>
 
-        <div className="space-y-6">
-          {/* Headline */}
-          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-            <h2 className="font-semibold text-foreground text-lg">Hero Headline</h2>
+        <section className="space-y-5 rounded-lg border border-border bg-card p-5 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <label className="text-sm font-medium text-foreground">Headline Text</label>
-              <textarea
-                value={formData.headline}
-                onChange={(e) => setFormData((prev) => ({ ...prev, headline: e.target.value }))}
-                rows={3}
-                className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-background font-mono text-sm"
-                placeholder={"Discover Handcrafted\nTreasures"}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Use a new line to split the headline into two lines. The second line will be highlighted in your primary color.
-              </p>
+              <h2 className="text-lg font-semibold text-foreground">Homepage Banner</h2>
+              <p className="text-sm text-muted-foreground">PNG, JPG, WebP, GIF, or SVG. Maximum file size: 5 MB.</p>
             </div>
-
-            {/* Live Preview */}
-            <div className="rounded-lg border border-border bg-muted/20 p-4">
-              <p className="text-xs text-muted-foreground uppercase font-semibold mb-3">Preview</p>
-              <h1 className="font-display text-3xl font-bold text-foreground leading-tight">
-                {(formData.headline || "").split("\n").map((line, i) => (
-                  <span key={i} className={i === 1 ? "text-primary" : undefined}>
-                    {line}
-                    <br />
-                  </span>
-                ))}
-              </h1>
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                onChange={handleUpload}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={busy}
+                className="inline-flex items-center gap-2 rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary/5 disabled:opacity-60"
+              >
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {formData.image ? "Replace Image" : "Upload Image"}
+              </button>
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-foreground text-lg">Social Proof Stats</h2>
-              <div className="flex items-center gap-3">
-                {/* Stats section toggle */}
-                <div className="flex items-center gap-2">
-                  {formData.statsEnabled ? (
-                    <Eye className="w-4 h-4 text-primary" />
-                  ) : (
-                    <EyeOff className="w-4 h-4 text-muted-foreground" />
-                  )}
-                  <span className="text-sm text-muted-foreground">Show stats</span>
-                  <button
-                    type="button"
-                    onClick={() => setFormData((prev) => ({ ...prev, statsEnabled: !prev.statsEnabled }))}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      formData.statsEnabled ? "bg-primary" : "bg-muted-foreground/30"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                        formData.statsEnabled ? "translate-x-6" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <p className="text-sm text-muted-foreground">
-              These numbers appear below the hero headline. Toggle individual stats on or off, or hide all stats at once.
-            </p>
-
-            <div className="space-y-3">
-              {formData.stats.map((stat) => (
-                <div
-                  key={stat.id}
-                  className={`border rounded-lg p-4 transition-opacity ${
-                    stat.enabled ? "border-border" : "border-border opacity-50"
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    {/* Enabled toggle */}
-                    <button
-                      type="button"
-                      onClick={() => updateStat(stat.id, "enabled", !stat.enabled)}
-                      className={`mt-1 relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors ${
-                        stat.enabled ? "bg-primary" : "bg-muted-foreground/30"
-                      }`}
-                      title={stat.enabled ? "Disable stat" : "Enable stat"}
-                    >
-                      <span
-                        className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${
-                          stat.enabled ? "translate-x-5" : "translate-x-1"
-                        }`}
-                      />
-                    </button>
-
-                    <div className="flex-1 grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs font-medium text-muted-foreground">Value</label>
-                        <input
-                          type="text"
-                          value={stat.value}
-                          onChange={(e) => updateStat(stat.id, "value", e.target.value)}
-                          placeholder="2500+"
-                          className="w-full mt-1 px-2 py-1.5 rounded-lg border border-border bg-background text-sm font-semibold"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-muted-foreground">Label</label>
-                        <input
-                          type="text"
-                          value={stat.label}
-                          onChange={(e) => updateStat(stat.id, "label", e.target.value)}
-                          placeholder="Happy Customers"
-                          className="w-full mt-1 px-2 py-1.5 rounded-lg border border-border bg-background text-sm"
-                        />
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => deleteStat(stat.id)}
-                      className="mt-1 p-1.5 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <button
-              onClick={addStat}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border hover:bg-muted transition-colors text-sm text-muted-foreground w-full justify-center"
-            >
-              <Plus className="w-4 h-4" />
-              Add Stat
-            </button>
-
-            {/* Stats Preview */}
-            {formData.statsEnabled && formData.stats.some((s) => s.enabled) && (
-              <div className="rounded-lg border border-border bg-muted/20 p-4">
-                <p className="text-xs text-muted-foreground uppercase font-semibold mb-3">Preview</p>
-                <div className="flex items-center gap-8">
-                  {formData.stats
-                    .filter((s) => s.enabled)
-                    .map((stat) => (
-                      <div key={stat.id}>
-                        <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-                        <p className="text-sm text-muted-foreground">{stat.label}</p>
-                      </div>
-                    ))}
-                </div>
+          <div className="overflow-hidden rounded-lg border border-border bg-muted/20">
+            {previewUrl ? (
+              <img src={previewUrl} alt={formData.imageAlt} className="block h-auto w-full" />
+            ) : (
+              <div className="flex aspect-[16/7] items-center justify-center text-muted-foreground">
+                <ImageIcon className="h-8 w-8" />
               </div>
             )}
           </div>
-        </div>
+
+          <div>
+            <label htmlFor="hero-alt" className="text-sm font-medium text-foreground">Image description</label>
+            <input
+              id="hero-alt"
+              type="text"
+              value={formData.imageAlt}
+              onChange={(event) => setFormData((current) => ({ ...current, imageAlt: event.target.value }))}
+              className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              placeholder="Describe the banner for screen readers"
+            />
+          </div>
+        </section>
       </div>
+
       <ConfirmModal
         open={confirmReset}
-        title="Reset Hero Section?"
-        message="This will restore the headline and stats to their default values."
-        confirmLabel="Reset to Defaults"
+        title="Restore Default Hero Image?"
+        message="The uploaded image will be removed and HeaderImage.png will be restored."
+        confirmLabel="Restore Default"
         variant="danger"
         onConfirm={handleReset}
         onCancel={() => setConfirmReset(false)}

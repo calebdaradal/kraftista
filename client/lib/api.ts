@@ -540,6 +540,32 @@ export const api = {
     async updateHero(payload: HeroCustomization, token: string) {
       await request<void>("/customization/hero", { method: "PUT", body: JSON.stringify({ data: payload }) }, token);
     },
+    async uploadHeroImage(file: File, token: string) {
+      const form = new FormData();
+      form.append("file", file);
+      const endpoints = buildApiCandidates("/customization/hero/image");
+      let lastErrorMessage = "Request failed";
+      let lastStatus = 500;
+      for (const endpoint of endpoints) {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          body: form,
+        });
+        if (response.ok) {
+          return (await response.json()) as { image_url: string; image: string };
+        }
+        lastStatus = response.status;
+        lastErrorMessage = await response.text();
+        if (response.status !== 404) {
+          throw new Error(lastErrorMessage || `Request failed (${response.status})`);
+        }
+      }
+      throw new Error(lastErrorMessage || `Request failed (${lastStatus})`);
+    },
+    async deleteHeroImage(token: string) {
+      await request<void>("/customization/hero/image", { method: "DELETE" }, token);
+    },
     async updateServices(payload: ServicesCustomization, token: string) {
       await request<void>("/customization/services", { method: "PUT", body: JSON.stringify({ data: payload }) }, token);
     },
