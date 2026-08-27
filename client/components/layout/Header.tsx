@@ -472,15 +472,15 @@ export function Header() {
                     onClick={closeShopMenu}
                     className="block group"
                   >
-                    <div className="h-56 w-full overflow-hidden rounded-xl bg-muted">
+                    <div className="h-56 w-full flex items-center justify-center overflow-hidden rounded-xl bg-muted">
                       {isImageSource(activeCategoryInfo.image_url) ? (
                         <img
                           src={activeCategoryInfo.image_url as string}
                           alt={activeCategoryInfo.name}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          className="max-w-full max-h-full w-auto h-auto object-contain transition-transform duration-300 group-hover:scale-105"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-4xl">
+                        <div className="text-4xl">
                           🧺
                         </div>
                       )}
