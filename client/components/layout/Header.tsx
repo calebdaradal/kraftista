@@ -388,7 +388,7 @@ export function Header() {
         >
           <div className="container mx-auto px-4 sm:px-6 py-6">
             <div className="grid grid-cols-12 gap-6 min-h-[320px]">
-              {/* Left: Shop all + collections */}
+              {/* Left: Shop all + collections (25%) */}
               <div className="col-span-3 border-r border-border pr-6">
                 <Link
                   to="/shop"
@@ -426,36 +426,37 @@ export function Header() {
                 </div>
               </div>
 
-              {/* Center: categories for the active collection */}
-              <div className="col-span-4 border-r border-border pr-6">
+              {/* Center: categories for the active collection (50%, internal 2-column) */}
+              <div className="col-span-6 border-r border-border pr-6">
                 {activeCollection ? (
                   <>
                     <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       {activeCollection}
                     </p>
-                    <div className="grid grid-cols-1 gap-0.5">
-                      {activeCategories.length === 0 && (
-                        <span className="px-3 py-2 text-sm text-muted-foreground">
-                          No categories
-                        </span>
-                      )}
-                      {activeCategories.map((category) => (
-                        <Link
-                          key={category}
-                          to={`/shop?category=${encodeURIComponent(category)}`}
-                          onMouseEnter={() => setHoveredCategory(category)}
-                          onClick={closeShopMenu}
-                          className={cn(
-                            "px-3 py-2 rounded-lg text-sm transition-colors",
-                            hoveredCategory === category
-                              ? "bg-muted text-primary font-medium"
-                              : "text-foreground hover:bg-muted",
-                          )}
-                        >
-                          {category}
-                        </Link>
-                      ))}
-                    </div>
+                    {activeCategories.length === 0 ? (
+                      <span className="px-3 py-2 text-sm text-muted-foreground">
+                        No categories
+                      </span>
+                    ) : (
+                      <div className="columns-2 gap-2">
+                        {activeCategories.map((category) => (
+                          <Link
+                            key={category}
+                            to={`/shop?category=${encodeURIComponent(category)}`}
+                            onMouseEnter={() => setHoveredCategory(category)}
+                            onClick={closeShopMenu}
+                            className={cn(
+                              "block px-3 py-2 mb-0.5 rounded-lg text-sm transition-colors break-inside-avoid",
+                              hoveredCategory === category
+                                ? "bg-muted text-primary font-medium"
+                                : "text-foreground hover:bg-muted",
+                            )}
+                          >
+                            {category}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </>
                 ) : (
                   <span className="px-3 py-2 text-sm text-muted-foreground">
@@ -464,15 +465,15 @@ export function Header() {
                 )}
               </div>
 
-              {/* Right: hovered category image + description */}
-              <div className="col-span-5">
+              {/* Right: hovered category image + description (25%) */}
+              <div className="col-span-3">
                 {activeCategoryInfo ? (
                   <Link
                     to={`/shop?category=${encodeURIComponent(activeCategoryInfo.name)}`}
                     onClick={closeShopMenu}
                     className="block group"
                   >
-                    <div className="h-56 w-full flex items-center justify-center overflow-hidden rounded-xl bg-muted">
+                    <div className="h-56 w-full flex items-center justify-center overflow-hidden rounded-xl">
                       {isImageSource(activeCategoryInfo.image_url) ? (
                         <img
                           src={activeCategoryInfo.image_url as string}
