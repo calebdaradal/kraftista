@@ -387,7 +387,7 @@ export function Header() {
           className="hidden md:block absolute left-0 right-0 top-full border-t border-border bg-background shadow-lg"
         >
           <div className="container mx-auto px-4 sm:px-6 py-6">
-            <div className="grid grid-cols-12 gap-6">
+            <div className="grid grid-cols-12 gap-6 min-h-[320px]">
               {/* Left: Shop all + collections */}
               <div className="col-span-3 border-r border-border pr-6">
                 <Link
@@ -472,7 +472,7 @@ export function Header() {
                     onClick={closeShopMenu}
                     className="block group"
                   >
-                    <div className="aspect-[16/9] w-full overflow-hidden rounded-xl bg-muted">
+                    <div className="h-56 w-full overflow-hidden rounded-xl bg-muted">
                       {isImageSource(activeCategoryInfo.image_url) ? (
                         <img
                           src={activeCategoryInfo.image_url as string}
@@ -485,11 +485,8 @@ export function Header() {
                         </div>
                       )}
                     </div>
-                    <h4 className="mt-3 font-semibold text-foreground">
-                      {activeCategoryInfo.name}
-                    </h4>
                     {activeCategoryInfo.description && (
-                      <p className="mt-1 text-sm text-muted-foreground line-clamp-3">
+                      <p className="mt-3 text-sm text-muted-foreground line-clamp-3">
                         {activeCategoryInfo.description}
                       </p>
                     )}
