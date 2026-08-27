@@ -10,6 +10,7 @@ import { SettingsProvider } from "@/context/SettingsContext";
 import { CustomizationProvider } from "@/context/CustomizationContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
+
 // Public Pages
 import Index from "./pages/Index";
 import About from "./pages/About";
@@ -62,7 +63,9 @@ export default function App() {
                   <Sonner position="bottom-right" richColors closeButton />
                   <BrowserRouter>
                     <Routes>
-                      {/* Public Routes */}
+					  {/* Donat */}
+					  {/* Baliew */}
+					  
                       <Route path="/" element={<Index />} />
                       <Route path="/shop" element={<Shop />} />
                       <Route path="/product/:id" element={<ProductDetail />} />
