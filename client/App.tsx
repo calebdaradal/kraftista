@@ -35,6 +35,7 @@ import Dashboard from "./pages/dashboard/Dashboard";
 import Products from "./pages/dashboard/Products";
 import ProductEdit from "./pages/dashboard/ProductEdit";
 import ProductCategories from "./pages/dashboard/ProductCategories";
+import ProductCollections from "./pages/dashboard/ProductCollections";
 import ProductTags from "./pages/dashboard/ProductTags";
 import ProductFeatured from "./pages/dashboard/ProductFeatured";
 import Analytics from "./pages/dashboard/Analytics";
@@ -103,6 +104,14 @@ export default function App() {
                         element={
                           <ProtectedRoute>
                             <ProductCategories />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/dashboard/products/collections"
+                        element={
+                          <ProtectedRoute>
+                            <ProductCollections />
                           </ProtectedRoute>
                         }
                       />

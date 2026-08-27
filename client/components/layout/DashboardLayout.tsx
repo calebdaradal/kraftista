@@ -82,6 +82,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       icon: Package,
       children: [
         { label: "All Products", href: "/dashboard/products" },
+        { label: "Collections", href: "/dashboard/products/collections" },
         { label: "Categories", href: "/dashboard/products/categories" },
         { label: "Tags", href: "/dashboard/products/tags" },
         { label: "Featured", href: "/dashboard/products/featured" },

@@ -42,6 +42,7 @@ export interface Product {
   image: string;
   gallery?: string[];
   category: string;
+  collection?: string;
   tags: string[];
   featured: boolean;
   rating: number;

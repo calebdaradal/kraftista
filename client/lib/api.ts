@@ -223,6 +223,7 @@ const normalizeProduct = (raw: any): Product => ({
   image: raw.image_url || raw.gallery_urls?.[0] || "🛍️",
   gallery: raw.gallery_urls ?? [],
   category: raw.category ?? "Uncategorized",
+  collection: raw.collection ?? undefined,
   tags: raw.tags ?? [],
   featured: Boolean(raw.featured),
   rating: Number(raw.rating ?? 0),
@@ -289,9 +290,10 @@ const toApiUserUpdate = (payload: Partial<FrontendUser>) => ({
 
 export const api = {
   products: {
-    async list(params?: { category?: string; active?: boolean; featured?: boolean; q?: string }) {
+    async list(params?: { category?: string; collection?: string; active?: boolean; featured?: boolean; q?: string }) {
       const query = new URLSearchParams();
       if (params?.category) query.set("category", params.category);
+      if (params?.collection) query.set("collection", params.collection);
       if (params?.active !== undefined) query.set("active", String(params.active));
       if (params?.featured !== undefined) query.set("featured", String(params.featured));
       if (params?.q) query.set("q", params.q);
@@ -318,6 +320,7 @@ export const api = {
               short_description: payload.shortDescription,
               full_description: payload.fullDescription,
               category: payload.category?.trim() ? payload.category : null,
+              collection: payload.collection?.trim() ? payload.collection : null,
               featured: payload.featured,
               active: payload.active,
               price: payload.price,
@@ -357,6 +360,7 @@ export const api = {
               short_description: payload.shortDescription,
               full_description: payload.fullDescription,
               category: payload.category?.trim() ? payload.category : null,
+              collection: payload.collection?.trim() ? payload.collection : null,
               featured: payload.featured,
               active: payload.active,
               price: payload.price,
@@ -398,6 +402,21 @@ export const api = {
     },
     async deleteCategory(id: string, token: string) {
       await request<void>(`/products/categories/${id}`, { method: "DELETE" }, token);
+    },
+    async listCollections(token: string) {
+      return request<TaxonomyItem[]>("/products/collections", {}, token);
+    },
+    async createCollection(name: string, token: string) {
+      return request<TaxonomyItem>("/products/collections", { method: "POST", body: JSON.stringify({ name }) }, token);
+    },
+    async updateCollection(id: string, name: string, token: string) {
+      return request<TaxonomyItem>(`/products/collections/${id}`, { method: "PATCH", body: JSON.stringify({ name }) }, token);
+    },
+    async getCollectionImpact(id: string, token: string) {
+      return request<{ product_count: number }>(`/products/collections/${id}/impact`, {}, token);
+    },
+    async deleteCollection(id: string, token: string) {
+      await request<void>(`/products/collections/${id}`, { method: "DELETE" }, token);
     },
     async listTags(token: string) {
       return request<TaxonomyItem[]>("/products/tags", {}, token);

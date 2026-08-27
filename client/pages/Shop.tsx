@@ -8,6 +8,7 @@ import type { Product } from "@/types/product";
 export default function Shop() {
   const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCollection, setSelectedCollection] = useState("All");
   const [storefrontProducts, setStorefrontProducts] = useState<Product[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
@@ -26,16 +27,30 @@ export default function Shop() {
     return ["All", ...dynamic];
   }, [storefrontProducts]);
 
+  const collections = useMemo(() => {
+    const dynamic = Array.from(
+      new Set(storefrontProducts.map((product) => product.collection).filter((c): c is string => Boolean(c)))
+    ).sort((a, b) => a.localeCompare(b));
+    return ["All", ...dynamic];
+  }, [storefrontProducts]);
+
   useEffect(() => {
     if (!categories.includes(selectedCategory)) {
       setSelectedCategory("All");
     }
   }, [categories, selectedCategory]);
 
-  const filteredProducts =
-    selectedCategory === "All"
-      ? storefrontProducts
-      : storefrontProducts.filter((p) => p.category === selectedCategory);
+  useEffect(() => {
+    if (!collections.includes(selectedCollection)) {
+      setSelectedCollection("All");
+    }
+  }, [collections, selectedCollection]);
+
+  const filteredProducts = storefrontProducts.filter(
+    (p) =>
+      (selectedCategory === "All" || p.category === selectedCategory) &&
+      (selectedCollection === "All" || p.collection === selectedCollection)
+  );
 
   return (
     <Layout>
@@ -54,22 +69,49 @@ export default function Shop() {
       {/* Filters and Products */}
       <section className="py-10 md:py-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Collection Filter */}
+          {collections.length > 1 && (
+            <div className="mb-6">
+              <p className="mb-2 text-sm font-semibold text-foreground">Collection</p>
+              <div className="overflow-x-auto">
+                <div className="flex gap-2 min-w-max">
+                  {collections.map((collection) => (
+                    <button
+                      key={collection}
+                      onClick={() => setSelectedCollection(collection)}
+                      className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition-colors ${
+                        selectedCollection === collection
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      {collection}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Category Filter */}
-          <div className="mb-12 overflow-x-auto">
-            <div className="flex gap-2 min-w-max">
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition-colors ${
-                    selectedCategory === category
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-foreground hover:bg-muted/80"
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
+          <div className="mb-12">
+            <p className="mb-2 text-sm font-semibold text-foreground">Category</p>
+            <div className="overflow-x-auto">
+              <div className="flex gap-2 min-w-max">
+                {categories.map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                    className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition-colors ${
+                      selectedCategory === category
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-foreground hover:bg-muted/80"
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

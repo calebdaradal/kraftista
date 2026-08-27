@@ -63,6 +63,7 @@ export default function ProductEdit() {
   const [newCare, setNewCare] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+  const [collectionOptions, setCollectionOptions] = useState<string[]>([]);
   const [tagOptions, setTagOptions] = useState<string[]>([]);
   useEffect(() => {
     if (isNew || !id) return;
@@ -85,6 +86,10 @@ export default function ProductEdit() {
       .listCategories(token)
       .then((items) => setCategoryOptions(items.map((item) => item.name)))
       .catch(() => setCategoryOptions([]));
+    api.products
+      .listCollections(token)
+      .then((items) => setCollectionOptions(items.map((item) => item.name)))
+      .catch(() => setCollectionOptions([]));
     api.products
       .listTags(token)
       .then((items) => setTagOptions(items.map((item) => item.name)))
@@ -370,6 +375,25 @@ export default function ProductEdit() {
                     {categoryOptions.map((category) => (
                       <option key={category} value={category}>
                         {category}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-foreground mb-2">
+                    Collection
+                  </label>
+                  <select
+                    name="collection"
+                    value={formData.collection ?? ""}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="">No collection</option>
+                    {collectionOptions.map((collection) => (
+                      <option key={collection} value={collection}>
+                        {collection}
                       </option>
                     ))}
                   </select>
