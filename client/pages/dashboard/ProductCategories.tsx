@@ -1,15 +1,19 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { api, type TaxonomyItem } from "@/lib/api";
 import { useEffect, useState } from "react";
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { ImageUpload } from "@/components/ImageUpload";
 import { toast } from "sonner";
 
 export default function ProductCategories() {
   const [categories, setCategories] = useState<TaxonomyItem[]>([]);
   const [name, setName] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<TaxonomyItem | null>(null);
   const [editName, setEditName] = useState("");
+  const [editImage, setEditImage] = useState<string>("");
+  const [editDescription, setEditDescription] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [isLoadingList, setIsLoadingList] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
@@ -45,16 +49,40 @@ export default function ProductCategories() {
     }
   };
 
-  const handleUpdate = async (id: string) => {
-    if (!editName.trim() || !token) return;
+  const openEdit = (category: TaxonomyItem) => {
+    setEditing(category);
+    setEditName(category.name);
+    setEditImage(category.image_url ?? "");
+    setEditDescription(category.description ?? "");
+  };
+
+  const closeEdit = () => {
+    setEditing(null);
+    setEditName("");
+    setEditImage("");
+    setEditDescription("");
+  };
+
+  const handleUpdate = async () => {
+    if (!editing || !editName.trim() || !token) return;
     try {
-      setPendingActionId(id);
-      await api.products.updateCategory(id, editName.trim(), token);
-      setEditingId(null);
-      setEditName("");
+      setIsSaving(true);
+      await api.products.updateCategory(
+        editing.id,
+        {
+          name: editName.trim(),
+          image_url: editImage.trim() ? editImage.trim() : null,
+          description: editDescription.trim() ? editDescription.trim() : null,
+        },
+        token,
+      );
+      toast.success("Category updated.");
+      closeEdit();
       await loadCategories();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update category.");
     } finally {
-      setPendingActionId(null);
+      setIsSaving(false);
     }
   };
 
@@ -136,71 +164,44 @@ export default function ProductCategories() {
               {!isLoadingList && categories.map((category) => (
                 <tr key={category.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3">
-                    {editingId === category.id ? (
-                      <input
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
-                      />
-                    ) : (
-                      <span>{category.name}</span>
-                    )}
+                    <div className="flex items-center gap-3">
+                      {category.image_url ? (
+                        <img
+                          src={category.image_url}
+                          alt={category.name}
+                          className="h-10 w-10 rounded-lg object-cover"
+                        />
+                      ) : (
+                        <div className="h-10 w-10 rounded-lg bg-muted" />
+                      )}
+                      <div>
+                        <span className="font-medium">{category.name}</span>
+                        {category.description ? (
+                          <p className="text-xs text-muted-foreground line-clamp-1 max-w-xs">{category.description}</p>
+                        ) : null}
+                      </div>
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{category.product_count}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
-                      {editingId === category.id ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdate(category.id)}
-                            disabled={pendingActionId === category.id}
-                            className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground"
-                          >
-                            {pendingActionId === category.id ? (
-                              <span className="inline-flex items-center gap-2">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                Saving...
-                              </span>
-                            ) : (
-                              "Save"
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingId(null);
-                              setEditName("");
-                            }}
-                            className="rounded-lg border border-border px-3 py-1.5 text-sm"
-                          >
-                            Cancel
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingId(category.id);
-                              setEditName(category.name);
-                            }}
-                            className="rounded-lg border border-border p-2 text-primary"
-                            title="Edit category"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(category.id, category.name)}
-                            disabled={pendingActionId === category.id}
-                            className="rounded-lg border border-destructive/20 p-2 text-destructive"
-                            title="Delete category"
-                          >
-                            {pendingActionId === category.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                          </button>
-                        </>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => openEdit(category)}
+                        className="rounded-lg border border-border p-2 text-primary"
+                        title="Edit category"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(category.id, category.name)}
+                        disabled={pendingActionId === category.id}
+                        className="rounded-lg border border-destructive/20 p-2 text-destructive"
+                        title="Delete category"
+                      >
+                        {pendingActionId === category.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -216,6 +217,74 @@ export default function ProductCategories() {
           </table>
         </div>
       </div>
+
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-lg">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="font-display text-xl font-bold text-foreground">Edit Category</h2>
+              <button
+                type="button"
+                onClick={closeEdit}
+                className="rounded-lg p-1 text-muted-foreground hover:bg-muted"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-semibold">Name</label>
+                <input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-semibold">Image</label>
+                <ImageUpload
+                  label="Upload Category Image"
+                  currentImage={editImage || undefined}
+                  onUpload={(url) => setEditImage(url)}
+                  onRemove={() => setEditImage("")}
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-semibold">Description</label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={3}
+                  placeholder="Short description shown in the store navigation"
+                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeEdit}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleUpdate}
+                disabled={isSaving}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+              >
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {isSaving ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ConfirmModal
         open={!!deleteConfirm}

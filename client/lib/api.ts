@@ -80,6 +80,17 @@ export interface TaxonomyItem {
   name: string;
   slug: string;
   product_count: number;
+  image_url?: string | null;
+  description?: string | null;
+}
+
+export interface PublicCategory {
+  id: string;
+  name: string;
+  slug: string;
+  image_url?: string | null;
+  description?: string | null;
+  product_count: number;
 }
 
 export interface CustomerOrderItem {
@@ -391,11 +402,22 @@ export const api = {
     async listCategories(token: string) {
       return request<TaxonomyItem[]>("/products/categories", {}, token);
     },
+    async listPublicCategories() {
+      return request<PublicCategory[]>("/products/categories/public");
+    },
     async createCategory(name: string, token: string) {
       return request<TaxonomyItem>("/products/categories", { method: "POST", body: JSON.stringify({ name }) }, token);
     },
-    async updateCategory(id: string, name: string, token: string) {
-      return request<TaxonomyItem>(`/products/categories/${id}`, { method: "PATCH", body: JSON.stringify({ name }) }, token);
+    async updateCategory(
+      id: string,
+      payload: { name: string; image_url?: string | null; description?: string | null },
+      token: string,
+    ) {
+      return request<TaxonomyItem>(
+        `/products/categories/${id}`,
+        { method: "PATCH", body: JSON.stringify(payload) },
+        token,
+      );
     },
     async getCategoryImpact(id: string, token: string) {
       return request<{ product_count: number }>(`/products/categories/${id}/impact`, {}, token);

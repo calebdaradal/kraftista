@@ -1,11 +1,12 @@
 import { Link, useNavigate } from "react-router-dom";
-import { ShoppingCart, Menu, X, User, LogOut } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { ShoppingCart, Menu, X, User, LogOut, ChevronDown, ChevronRight } from "lucide-react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useUser } from "@/context/UserContext";
 import { CheckoutModal } from "@/components/CheckoutModal";
-import { api } from "@/lib/api";
+import { api, type PublicCategory } from "@/lib/api";
+import type { Product } from "@/types/product";
 import { useSettings } from "@/context/SettingsContext";
 import { SiteLogo } from "@/components/SiteLogo";
 
@@ -14,7 +15,14 @@ export function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
+  const [isShopMenuOpen, setIsShopMenuOpen] = useState(false);
+  const [hoveredCollection, setHoveredCollection] = useState<string | null>(null);
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const [mobileShopOpen, setMobileShopOpen] = useState(false);
+  const [shopProducts, setShopProducts] = useState<Product[]>([]);
+  const [publicCategories, setPublicCategories] = useState<PublicCategory[]>([]);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const shopMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { itemCount } = useCart();
   const { user, logout } = useUser();
@@ -23,10 +31,66 @@ export function Header() {
   const navLinks = [
     { label: "Home", href: "/" },
     { label: "Services", href: "/services" },
-    { label: "Shop", href: "/shop" },
     { label: "About", href: "/about" },
     { label: "Contact", href: "/contact" },
   ];
+
+  // Load storefront data used to build the Shop mega-menu.
+  useEffect(() => {
+    api.products
+      .list({ active: true })
+      .then(setShopProducts)
+      .catch(() => setShopProducts([]));
+    api.products
+      .listPublicCategories()
+      .then(setPublicCategories)
+      .catch(() => setPublicCategories([]));
+  }, []);
+
+  // Ordered list of collections that have at least one product.
+  const collections = useMemo(() => {
+    const set = new Set<string>();
+    for (const product of shopProducts) {
+      if (product.collection) set.add(product.collection);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [shopProducts]);
+
+  // Dynamic map: collection name -> category names derived from products.
+  const categoriesByCollection = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const product of shopProducts) {
+      if (!product.collection || !product.category) continue;
+      if (!map.has(product.collection)) map.set(product.collection, new Set());
+      map.get(product.collection)!.add(product.category);
+    }
+    const result: Record<string, string[]> = {};
+    for (const [collection, cats] of map.entries()) {
+      result[collection] = Array.from(cats).sort((a, b) => a.localeCompare(b));
+    }
+    return result;
+  }, [shopProducts]);
+
+  // Lookup for a category's image + description.
+  const categoryInfo = useMemo(() => {
+    const map: Record<string, PublicCategory> = {};
+    for (const category of publicCategories) {
+      map[category.name.toLowerCase()] = category;
+    }
+    return map;
+  }, [publicCategories]);
+
+  const activeCollection = hoveredCollection ?? collections[0] ?? null;
+  const activeCategories = activeCollection ? categoriesByCollection[activeCollection] ?? [] : [];
+  const activeCategoryInfo = hoveredCategory ? categoryInfo[hoveredCategory.toLowerCase()] : undefined;
+  const isImageSource = (src?: string | null) =>
+    !!src && (src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://"));
+
+  const closeShopMenu = () => {
+    setIsShopMenuOpen(false);
+    setHoveredCollection(null);
+    setHoveredCategory(null);
+  };
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -86,15 +150,47 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
+            <Link
+              to="/"
+              className="text-foreground hover:text-primary transition-colors font-medium text-sm"
+            >
+              Home
+            </Link>
+
+            {/* Shop mega-menu trigger */}
+            <div
+              className="static"
+              onMouseEnter={() => setIsShopMenuOpen(true)}
+            >
               <Link
-                key={link.href}
-                to={link.href}
-                className="text-foreground hover:text-primary transition-colors font-medium text-sm"
+                to="/shop"
+                className={cn(
+                  "flex items-center gap-1 text-foreground hover:text-primary transition-colors font-medium text-sm",
+                  isShopMenuOpen && "text-primary",
+                )}
               >
-                {link.label}
+                Shop
+                <ChevronDown
+                  className={cn(
+                    "w-4 h-4 transition-transform",
+                    isShopMenuOpen && "rotate-180",
+                  )}
+                />
               </Link>
-            ))}
+            </div>
+
+            {navLinks
+              .filter((link) => link.href !== "/")
+              .map((link) => (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  onMouseEnter={closeShopMenu}
+                  className="text-foreground hover:text-primary transition-colors font-medium text-sm"
+                >
+                  {link.label}
+                </Link>
+              ))}
           </nav>
 
           {/* Right Side Actions */}
@@ -200,16 +296,74 @@ export function Header() {
         {/* Mobile Navigation */}
         {isOpen && (
           <nav className="md:hidden pb-4 flex flex-col gap-2">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                onClick={() => setIsOpen(false)}
-                className="block px-4 py-2 text-foreground hover:bg-muted rounded-lg transition-colors font-medium text-sm"
-              >
-                {link.label}
-              </Link>
-            ))}
+            <Link
+              to="/"
+              onClick={() => setIsOpen(false)}
+              className="block px-4 py-2 text-foreground hover:bg-muted rounded-lg transition-colors font-medium text-sm"
+            >
+              Home
+            </Link>
+
+            {/* Shop accordion (lists only, no preview column) */}
+            <button
+              onClick={() => setMobileShopOpen((prev) => !prev)}
+              className="flex items-center justify-between w-full px-4 py-2 text-foreground hover:bg-muted rounded-lg transition-colors font-medium text-sm"
+            >
+              Shop
+              <ChevronDown
+                className={cn(
+                  "w-4 h-4 transition-transform",
+                  mobileShopOpen && "rotate-180",
+                )}
+              />
+            </button>
+            {mobileShopOpen && (
+              <div className="pl-4 flex flex-col gap-1 border-l border-border ml-4">
+                <Link
+                  to="/shop"
+                  onClick={() => setIsOpen(false)}
+                  className="block px-4 py-2 text-primary font-semibold hover:bg-muted rounded-lg transition-colors text-sm"
+                >
+                  Shop all products
+                </Link>
+                {collections.map((collection) => (
+                  <div key={collection} className="flex flex-col">
+                    <Link
+                      to={`/shop?collection=${encodeURIComponent(collection)}`}
+                      onClick={() => setIsOpen(false)}
+                      className="block px-4 py-2 text-foreground font-medium hover:bg-muted rounded-lg transition-colors text-sm"
+                    >
+                      {collection}
+                    </Link>
+                    <div className="pl-4 flex flex-col">
+                      {(categoriesByCollection[collection] ?? []).map((category) => (
+                        <Link
+                          key={category}
+                          to={`/shop?category=${encodeURIComponent(category)}`}
+                          onClick={() => setIsOpen(false)}
+                          className="block px-4 py-1.5 text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg transition-colors text-sm"
+                        >
+                          {category}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {navLinks
+              .filter((link) => link.href !== "/")
+              .map((link) => (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  onClick={() => setIsOpen(false)}
+                  className="block px-4 py-2 text-foreground hover:bg-muted rounded-lg transition-colors font-medium text-sm"
+                >
+                  {link.label}
+                </Link>
+              ))}
             {!user && (
               <button
                 onClick={() => {
@@ -224,6 +378,132 @@ export function Header() {
           </nav>
         )}
       </div>
+
+      {/* Shop Mega-Menu (desktop) */}
+      {isShopMenuOpen && (
+        <div
+          ref={shopMenuRef}
+          onMouseLeave={closeShopMenu}
+          className="hidden md:block absolute left-0 right-0 top-full border-t border-border bg-background shadow-lg"
+        >
+          <div className="container mx-auto px-4 sm:px-6 py-6">
+            <div className="grid grid-cols-12 gap-6">
+              {/* Left: Shop all + collections */}
+              <div className="col-span-3 border-r border-border pr-6">
+                <Link
+                  to="/shop"
+                  onClick={closeShopMenu}
+                  className="block px-3 py-2 rounded-lg font-semibold text-sm text-primary hover:bg-muted transition-colors"
+                >
+                  Shop all products
+                </Link>
+                <div className="mt-2 flex flex-col">
+                  {collections.length === 0 && (
+                    <span className="px-3 py-2 text-sm text-muted-foreground">
+                      No collections yet
+                    </span>
+                  )}
+                  {collections.map((collection) => (
+                    <Link
+                      key={collection}
+                      to={`/shop?collection=${encodeURIComponent(collection)}`}
+                      onMouseEnter={() => {
+                        setHoveredCollection(collection);
+                        setHoveredCategory(null);
+                      }}
+                      onClick={closeShopMenu}
+                      className={cn(
+                        "flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors",
+                        activeCollection === collection
+                          ? "bg-muted text-primary font-medium"
+                          : "text-foreground hover:bg-muted",
+                      )}
+                    >
+                      {collection}
+                      <ChevronRight className="w-4 h-4 opacity-60" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Center: categories for the active collection */}
+              <div className="col-span-4 border-r border-border pr-6">
+                {activeCollection ? (
+                  <>
+                    <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {activeCollection}
+                    </p>
+                    <div className="grid grid-cols-1 gap-0.5">
+                      {activeCategories.length === 0 && (
+                        <span className="px-3 py-2 text-sm text-muted-foreground">
+                          No categories
+                        </span>
+                      )}
+                      {activeCategories.map((category) => (
+                        <Link
+                          key={category}
+                          to={`/shop?category=${encodeURIComponent(category)}`}
+                          onMouseEnter={() => setHoveredCategory(category)}
+                          onClick={closeShopMenu}
+                          className={cn(
+                            "px-3 py-2 rounded-lg text-sm transition-colors",
+                            hoveredCategory === category
+                              ? "bg-muted text-primary font-medium"
+                              : "text-foreground hover:bg-muted",
+                          )}
+                        >
+                          {category}
+                        </Link>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <span className="px-3 py-2 text-sm text-muted-foreground">
+                    Hover a collection to see its categories
+                  </span>
+                )}
+              </div>
+
+              {/* Right: hovered category image + description */}
+              <div className="col-span-5">
+                {activeCategoryInfo ? (
+                  <Link
+                    to={`/shop?category=${encodeURIComponent(activeCategoryInfo.name)}`}
+                    onClick={closeShopMenu}
+                    className="block group"
+                  >
+                    <div className="aspect-[16/9] w-full overflow-hidden rounded-xl bg-muted">
+                      {isImageSource(activeCategoryInfo.image_url) ? (
+                        <img
+                          src={activeCategoryInfo.image_url as string}
+                          alt={activeCategoryInfo.name}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-4xl">
+                          🧺
+                        </div>
+                      )}
+                    </div>
+                    <h4 className="mt-3 font-semibold text-foreground">
+                      {activeCategoryInfo.name}
+                    </h4>
+                    {activeCategoryInfo.description && (
+                      <p className="mt-1 text-sm text-muted-foreground line-clamp-3">
+                        {activeCategoryInfo.description}
+                      </p>
+                    )}
+                  </Link>
+                ) : (
+                  <div className="h-full flex items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
+                    Hover a category to preview it
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Auth Modal */}
       <CheckoutModal

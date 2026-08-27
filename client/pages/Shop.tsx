@@ -1,12 +1,13 @@
 import { Layout } from "@/components/layout/Layout";
 import { ShoppingCart, Heart, Star, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { api } from "@/lib/api";
 import type { Product } from "@/types/product";
 
 export default function Shop() {
   const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
+  const [searchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedCollection, setSelectedCollection] = useState("All");
   const [storefrontProducts, setStorefrontProducts] = useState<Product[]>([]);
@@ -33,6 +34,20 @@ export default function Shop() {
     ).sort((a, b) => a.localeCompare(b));
     return ["All", ...dynamic];
   }, [storefrontProducts]);
+
+  // Apply category/collection from URL query params once the options are known
+  useEffect(() => {
+    const categoryParam = searchParams.get("category");
+    if (categoryParam) {
+      const match = categories.find((c) => c.toLowerCase() === categoryParam.toLowerCase());
+      if (match) setSelectedCategory(match);
+    }
+    const collectionParam = searchParams.get("collection");
+    if (collectionParam) {
+      const match = collections.find((c) => c.toLowerCase() === collectionParam.toLowerCase());
+      if (match) setSelectedCollection(match);
+    }
+  }, [searchParams, categories, collections]);
 
   useEffect(() => {
     if (!categories.includes(selectedCategory)) {
