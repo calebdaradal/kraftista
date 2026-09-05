@@ -87,7 +87,7 @@ export function ImageUpload({
                 {label}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                PNG, JPG up to 5MB
+                PNG, JPG — optimized on upload
               </p>
             </>
           )}

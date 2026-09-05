@@ -15,6 +15,7 @@ import type {
   TertiaryVariationOption,
 } from "@/data/products";
 import { cn } from "@/lib/utils";
+import { ImageStorage } from "@/utils/imageStorage";
 
 const HEX_PRESETS = [
   "#000000",
@@ -116,12 +117,7 @@ export function ProductVariationsForm({
 
   const handlePrimaryImage = async (optionId: string, file: File | null) => {
     if (!file || !file.type.startsWith("image/")) return;
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result as string);
-      r.onerror = reject;
-      r.readAsDataURL(file);
-    });
+    const dataUrl = await ImageStorage.compressImage(file);
     setPrimaryOptions(
       primaryVariation.options.map((o) =>
         o.id === optionId ? { ...o, image: dataUrl } : o

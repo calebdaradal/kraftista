@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Upload, X, Star, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ImageStorage } from "@/utils/imageStorage";
 
 interface ProductImageUploadProps {
   images: string[];
@@ -17,32 +18,27 @@ export function ProductImageUpload({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    let loadedCount = 0;
-    const newImages: string[] = [...images];
-
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        newImages.push(dataUrl);
-        loadedCount++;
-
-        // Call onChange only after all files are loaded
-        if (loadedCount === files.length) {
-          onChange(newImages, 0);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-
-    // Reset input
+    // Reset input early so the same file can be re-selected later.
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+    if (files.length === 0) return;
+
+    const newImages: string[] = [...images];
+    // Compress sequentially to keep peak memory low with many large images.
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) continue;
+      try {
+        const dataUrl = await ImageStorage.compressImage(file);
+        newImages.push(dataUrl);
+      } catch {
+        /* skip files that fail to load/compress */
+      }
+    }
+
+    onChange(newImages, 0);
   };
 
   const handleRemoveImage = (index: number) => {
