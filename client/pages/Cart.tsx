@@ -144,7 +144,7 @@ export default function Cart() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
                     <span className="font-semibold text-foreground">
-                      ${totalPrice.toFixed(2)}
+                      ₱{totalPrice.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -162,7 +162,7 @@ export default function Cart() {
                 <div className="flex justify-between text-lg">
                   <span className="font-semibold text-foreground">Total</span>
                   <span className="font-bold text-primary text-xl">
-                    ${(totalPrice * 1.08).toFixed(2)}
+                    {(totalPrice * 1.08).toFixed(2)}₱
                   </span>
                 </div>
 

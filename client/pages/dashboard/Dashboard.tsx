@@ -137,7 +137,7 @@ export default function Dashboard() {
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                     <span className="text-muted-foreground">{product.category}</span>
                     <span className="font-semibold text-foreground">
-                      ${product.price.toFixed(2)}
+                      {product.price.toFixed(2)}₱
                     </span>
                     <span
                       className={

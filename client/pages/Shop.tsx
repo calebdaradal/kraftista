@@ -225,11 +225,11 @@ export default function Shop() {
                   <div className="mt-4 mb-3">
                     <div className="flex items-baseline gap-2">
                       <span className="text-lg font-bold text-primary">
-                        ${product.price.toFixed(2)}
+                        {product.price.toFixed(2)}₱
                       </span>
                       {product.originalPrice && (
                         <span className="text-xs text-muted-foreground line-through">
-                          ${product.originalPrice.toFixed(2)}
+                          {product.originalPrice.toFixed(2)}₱
                         </span>
                       )}
                     </div>

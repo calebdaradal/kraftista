@@ -223,11 +223,11 @@ export default function Products() {
                       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm">
                         <span className="text-muted-foreground">{product.category}</span>
                         <span className="font-semibold text-foreground">
-                          ${product.price.toFixed(2)}
+                          {product.price.toFixed(2)}₱
                         </span>
                         {product.originalPrice && (
                           <span className="text-xs text-muted-foreground line-through">
-                            ${product.originalPrice.toFixed(2)}
+                            {product.originalPrice.toFixed(2)}₱
                           </span>
                         )}
                       </div>

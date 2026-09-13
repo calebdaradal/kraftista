@@ -213,7 +213,7 @@ export default function Orders() {
                                 </div>
                               )}
                             </div>
-                            <p className="text-sm font-semibold text-foreground flex-shrink-0">${Number(item.line_total).toFixed(2)}</p>
+                            <p className="text-sm font-semibold text-foreground flex-shrink-0">{Number(item.line_total).toFixed(2)}₱</p>
                           </div>
                         </div>
                       ))}

@@ -133,7 +133,7 @@ export function ProductVariationsForm({
         description={
           <>
             For different designs or styles—name the group, add a photo per option, and set the
-            exact price for that design (for example base ${basePrice.toFixed(2)} → this design $
+            exact price for that design (for example base {basePrice.toFixed(2)}₱ → this design 
             {(basePrice + 2).toFixed(2)}).
           </>
         }

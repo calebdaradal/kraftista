@@ -492,7 +492,7 @@ export default function ProductEdit() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-muted-foreground">Regular price:</span>
-                          <span className="font-semibold text-foreground">${formData.price.toFixed(2)}</span>
+                          <span className="font-semibold text-foreground">{formData.price.toFixed(2)}₱</span>
                         </div>
                         {saleType === "percentage" && (
                           <div className="flex justify-between items-center text-sm">

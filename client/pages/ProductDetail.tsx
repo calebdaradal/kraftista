@@ -534,7 +534,7 @@ export default function ProductDetail() {
                                 </div>
                                 <div className="text-center">
                                   <p className="text-xs font-semibold text-foreground">{option.label}</p>
-                                  <p className="text-xs font-medium text-primary">${option.price.toFixed(2)}</p>
+                                  <p className="text-xs font-medium text-primary">{option.price.toFixed(2)}₱</p>
                                 </div>
                               </button>
                             ) : (
@@ -554,7 +554,7 @@ export default function ProductDetail() {
                               >
                                 {option.label}
                                 <span className="ml-1.5 text-xs opacity-90">
-                                  (${option.price.toFixed(2)})
+                                  ({option.price.toFixed(2)}₱)
                                 </span>
                               </button>
                             );
@@ -633,7 +633,7 @@ export default function ProductDetail() {
                                 {option.label}
                                 {option.additionalPrice > 0 && (
                                   <span className="ml-1.5 text-xs opacity-90">
-                                    (+${option.additionalPrice.toFixed(2)})
+                                    (+₱{option.additionalPrice.toFixed(2)})
                                   </span>
                                 )}
                               </button>
@@ -974,7 +974,7 @@ export default function ProductDetail() {
                         {relatedProduct.name}
                       </h3>
                       <p className="text-lg font-bold text-primary mt-3">
-                        ${relatedProduct.price.toFixed(2)}
+                        {relatedProduct.price.toFixed(2)}₱
                       </p>
                     </div>
                   </Link>

@@ -7,7 +7,7 @@ import { useUser } from "@/context/UserContext";
 import { ShoppingBag, RotateCcw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-const formatCurrency = (value: number) => `$${Number(value || 0).toFixed(2)}`;
+const formatCurrency = (value: number) => `${Number(value || 0).toFixed(2)}₱`;
 
 const looksLikeUrl = (value?: string | null) => {
   if (!value) return false;

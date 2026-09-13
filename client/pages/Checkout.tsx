@@ -307,7 +307,7 @@ export default function Checkout() {
                         </p>
                       </div>
                       <p className="font-semibold text-foreground">
-                        ${(item.price * item.quantity).toFixed(2)}
+                        {(item.price * item.quantity).toFixed(2)}₱
                       </p>
                     </div>
                   ))}
@@ -396,19 +396,19 @@ export default function Checkout() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
                     <span className="font-semibold text-foreground">
-                      ${subtotal.toFixed(2)}
+                      {subtotal.toFixed(2)}₱
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Shipping</span>
                     <span className="font-semibold text-foreground">
-                      {shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}`}
+                      {shipping === 0 ? "FREE" : `${shipping.toFixed(2)}₱`}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Tax</span>
                     <span className="font-semibold text-foreground">
-                      ${tax.toFixed(2)}
+                      {tax.toFixed(2)}₱
                     </span>
                   </div>
                 </div>
@@ -416,7 +416,7 @@ export default function Checkout() {
                 <div className="flex justify-between text-lg">
                   <span className="font-semibold text-foreground">Total</span>
                   <span className="font-bold text-primary text-xl">
-                    ${total.toFixed(2)}
+                    ₱{total.toFixed(2)}
                   </span>
                 </div>
 
