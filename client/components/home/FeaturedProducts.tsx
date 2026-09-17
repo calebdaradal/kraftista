@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api, type PublicCategory } from "@/lib/api";
+import { CategoryGridSkeleton } from "@/components/SkeletonLoading";
 
 export function FeaturedProducts() {
   const isImageSource = (src?: string | null) =>
@@ -32,12 +32,7 @@ export function FeaturedProducts() {
 
         {/* Categories Grid */}
         {isLoading ? (
-          <div className="rounded-xl border border-border bg-card px-6 py-16 text-center text-muted-foreground">
-            <span className="inline-flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading categories...
-            </span>
-          </div>
+          <CategoryGridSkeleton count={4} />
         ) : categories.length === 0 ? (
           <div className="rounded-xl border border-border bg-card px-6 py-16 text-center text-muted-foreground">
             No categories available yet.

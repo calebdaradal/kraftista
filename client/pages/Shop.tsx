@@ -1,9 +1,10 @@
 import { Layout } from "@/components/layout/Layout";
-import { ShoppingCart, Heart, Star, Loader2 } from "lucide-react";
+import { ShoppingCart, Heart, Star } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "@/lib/api";
 import type { Product } from "@/types/product";
+import { ProductGridSkeleton } from "@/components/SkeletonLoading";
 
 export default function Shop() {
   const isImageSource = (src: string) => src.startsWith("http://") || src.startsWith("https://");
@@ -132,11 +133,10 @@ export default function Shop() {
 
           {/* Products Grid */}
           {isLoadingProducts ? (
+            <ProductGridSkeleton count={8} />
+          ) : filteredProducts.length === 0 ? (
             <div className="rounded-xl border border-border bg-card px-6 py-16 text-center text-muted-foreground">
-              <span className="inline-flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Loading products...
-              </span>
+              No products found matching your filters.
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
