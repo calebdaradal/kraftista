@@ -53,7 +53,7 @@ export default function Cart() {
                 >
                   {/* Product Image */}
                   <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted text-3xl">
-                    {item.image.startsWith("data:") || item.image.startsWith("http") ? (
+                    {item.image.startsWith("http://") || item.image.startsWith("https://") ? (
                       <img
                         src={item.image}
                         alt=""

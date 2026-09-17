@@ -16,9 +16,7 @@ const sanitizeCartImage = (image: string) => {
   if (!image) return null;
   const trimmed = image.trim();
   if (!trimmed) return null;
-  // Only reject base64 data-URLs — they are too large for the DB.
-  // Signed Supabase https:// URLs can exceed 512 chars and must be kept as-is.
-  if (trimmed.startsWith("data:")) return null;
+  if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) return null;
   return trimmed;
 };
 

@@ -7,7 +7,7 @@ import type { Product } from "@/types/product";
 import { useSettings } from "@/context/SettingsContext";
 
 export default function Dashboard() {
-  const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
+  const isImageSource = (src: string) => src.startsWith("http://") || src.startsWith("https://");
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const { settings } = useSettings();

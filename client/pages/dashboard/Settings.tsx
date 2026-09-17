@@ -42,7 +42,7 @@ export default function Settings() {
   const assetBase = apiBase.replace(/\/api\/?$/, "");
   const resolveAssetUrl = (path?: string) => {
     if (!path) return "";
-    if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("data:")) return path;
+    if (path.startsWith("http://") || path.startsWith("https://")) return path;
     return `${assetBase}${path.startsWith("/") ? "" : "/"}${path}`;
   };
 
@@ -50,7 +50,7 @@ export default function Settings() {
     setSettings(globalSettings);
   }, [globalSettings]);
 
-  const [activeTab, setActiveTab] = useState<"general" | "branding" | "content" | "colors">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "branding" | "content" | "colors" | "reviews">("general");
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

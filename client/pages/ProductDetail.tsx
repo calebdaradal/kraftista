@@ -29,7 +29,7 @@ import { toast } from "sonner";
 
 function ProductSlideContent({ src, variant }: { src: string; variant: "main" | "thumb" }) {
   const t = src.trim();
-  if (t.startsWith("data:") || t.startsWith("http://") || t.startsWith("https://")) {
+  if (t.startsWith("http://") || t.startsWith("https://")) {
     return (
       <img
         src={t}
@@ -64,7 +64,7 @@ function ProductSlideContent({ src, variant }: { src: string; variant: "main" | 
   );
 }
 
-const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
+const isImageSource = (src: string) => src.startsWith("http://") || src.startsWith("https://");
 
 /** Clicking the active option again clears that tier (back to default pricing / hero preview). */
 function toggleTierSelection(

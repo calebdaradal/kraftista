@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import type { Product } from "@/types/product";
 
 export default function Shop() {
-  const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
+  const isImageSource = (src: string) => src.startsWith("http://") || src.startsWith("https://");
   const [searchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedCollection, setSelectedCollection] = useState("All");

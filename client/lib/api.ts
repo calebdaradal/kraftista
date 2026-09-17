@@ -8,12 +8,38 @@ const defaultApiBase =
       ? "http://127.0.0.1:8000/api"
       : `${window.location.origin}/api`;
 const API_BASE = (import.meta.env.VITE_API_URL || defaultApiBase).replace(/\/$/, "");
+const uploadUris = new Map<string, string>();
+
+const storedUri = (value: string | null | undefined): string | null | undefined =>
+  value ? uploadUris.get(value) ?? value : value;
+
+const storedMedia = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(storedMedia);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, key === "image" && typeof item === "string" ? storedUri(item) : storedMedia(item)])
+    );
+  }
+  return value;
+};
+
+const registerStoredMedia = (display: unknown, storage: unknown): void => {
+  if (Array.isArray(display) && Array.isArray(storage)) {
+    display.forEach((item, index) => registerStoredMedia(item, storage[index]));
+  } else if (display && storage && typeof display === "object" && typeof storage === "object") {
+    for (const [key, item] of Object.entries(display)) {
+      const storedItem = (storage as Record<string, unknown>)[key];
+      if (key === "image" && typeof item === "string" && typeof storedItem === "string") uploadUris.set(item, storedItem);
+      else registerStoredMedia(item, storedItem);
+    }
+  }
+};
 
 /** Full URL to a path served from the API origin (e.g. `/api/customization/services/image`). Uses `VITE_API_URL` in production when the UI and API are on different hosts. */
 export function resolveAssetUrl(path?: string | null): string {
   if (!path) return "";
   const p = path.trim();
-  if (p.startsWith("http://") || p.startsWith("https://") || p.startsWith("data:")) return p;
+  if (p.startsWith("http://") || p.startsWith("https://")) return p;
   const base = API_BASE.replace(/\/api\/?$/, "");
   return `${base}${p.startsWith("/") ? "" : "/"}${p}`;
 }
@@ -81,6 +107,7 @@ export interface TaxonomyItem {
   slug: string;
   product_count: number;
   image_url?: string | null;
+  image_storage_uri?: string | null;
   description?: string | null;
 }
 
@@ -193,7 +220,7 @@ const handleExpiredSession = (isAdminToken: boolean) => {
 
 const request = async <T>(path: string, init: RequestInit = {}, token?: string): Promise<T> => {
   const headers = new Headers(init.headers);
-  headers.set("Content-Type", "application/json");
+  if (!(init.body instanceof FormData)) headers.set("Content-Type", "application/json");
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const response = await fetch(`${API_BASE}${path}`, { ...init, headers });
@@ -224,7 +251,16 @@ const request = async <T>(path: string, init: RequestInit = {}, token?: string):
   return (await response.json()) as T;
 };
 
-const normalizeProduct = (raw: any): Product => ({
+const normalizeProduct = (raw: any): Product => {
+  if (raw.image_url && raw.image_storage_uri) uploadUris.set(raw.image_url, raw.image_storage_uri);
+  for (const [index, url] of (raw.gallery_urls ?? []).entries()) {
+    const storageUri = raw.gallery_storage_uris?.[index];
+    if (url && storageUri) uploadUris.set(url, storageUri);
+  }
+  registerStoredMedia(raw.primary_variation, raw.primary_variation_storage);
+  registerStoredMedia(raw.secondary_variation, raw.secondary_variation_storage);
+  registerStoredMedia(raw.tertiary_variation, raw.tertiary_variation_storage);
+  return {
   id: raw.id,
   name: raw.name,
   shortDescription: raw.short_description ?? "",
@@ -257,14 +293,7 @@ const normalizeProduct = (raw: any): Product => ({
   primaryVariation: raw.primary_variation ?? undefined,
   secondaryVariation: raw.secondary_variation ?? undefined,
   tertiaryVariation: raw.tertiary_variation ?? undefined,
-});
-
-const getImageSourceForPayload = (payload: Product): string | null => {
-  const source = payload.image || payload.gallery?.[0] || null;
-  if (!source) return null;
-  // DB column image_url is short text for URL-like value; keep long data URLs in gallery JSON instead.
-  if (source.length > 500) return null;
-  return source;
+};
 };
 
 const toFrontendUser = (raw: ApiUser): FrontendUser => ({
@@ -318,8 +347,21 @@ export const api = {
     async listReviews(productId: string, page = 1, limit = 5): Promise<PublicReview[]> {
       return request<PublicReview[]>(`/products/${productId}/reviews?page=${page}&limit=${limit}`);
     },
+    async uploadMedia(file: File, token: string) {
+      const form = new FormData();
+      form.append("file", file);
+      const result = await request<{ storage_uri: string; image_url: string }>("/products/media", { method: "POST", body: form }, token);
+      uploadUris.set(result.image_url, result.storage_uri);
+      return result;
+    },
+    async uploadCategoryMedia(file: File, token: string) {
+      const form = new FormData();
+      form.append("file", file);
+      const result = await request<{ storage_uri: string; image_url: string }>("/products/categories/media", { method: "POST", body: form }, token);
+      uploadUris.set(result.image_url, result.storage_uri);
+      return result;
+    },
     async create(payload: Product, token: string) {
-      const imageSource = getImageSourceForPayload(payload);
       return normalizeProduct(
         await request<any>(
           "/products",
@@ -338,8 +380,8 @@ export const api = {
               original_price: payload.originalPrice,
               in_stock: payload.inStock,
               stock_count: payload.stockCount,
-              image_url: imageSource,
-              gallery_urls: payload.gallery ?? [],
+              image_url: storedUri(payload.image) || null,
+              gallery_urls: (payload.gallery ?? []).map(storedUri),
               tags: payload.tags ?? [],
               rating: payload.rating ?? 0,
               review_count: payload.reviewCount ?? 0,
@@ -349,9 +391,9 @@ export const api = {
               weight_kg: payload.weightKg ?? null,
               materials: payload.material ?? [],
               care_instructions: payload.care ?? [],
-              primary_variation: payload.primaryVariation ?? null,
-              secondary_variation: payload.secondaryVariation ?? null,
-              tertiary_variation: payload.tertiaryVariation ?? null,
+              primary_variation: storedMedia(payload.primaryVariation) ?? null,
+              secondary_variation: storedMedia(payload.secondaryVariation) ?? null,
+              tertiary_variation: storedMedia(payload.tertiaryVariation) ?? null,
             }),
           },
           token
@@ -359,7 +401,6 @@ export const api = {
       );
     },
     async update(id: string, payload: Product, token: string) {
-      const imageSource = getImageSourceForPayload(payload);
       return normalizeProduct(
         await request<any>(
           `/products/${id}`,
@@ -378,8 +419,8 @@ export const api = {
               original_price: payload.originalPrice,
               in_stock: payload.inStock,
               stock_count: payload.stockCount,
-              image_url: imageSource,
-              gallery_urls: payload.gallery ?? [],
+              image_url: storedUri(payload.image) || null,
+              gallery_urls: (payload.gallery ?? []).map(storedUri),
               tags: payload.tags ?? [],
               dimension_width_cm: payload.dimensions?.widthCm ?? null,
               dimension_height_cm: payload.dimensions?.heightCm ?? null,
@@ -387,9 +428,9 @@ export const api = {
               weight_kg: payload.weightKg ?? null,
               materials: payload.material ?? [],
               care_instructions: payload.care ?? [],
-              primary_variation: payload.primaryVariation ?? null,
-              secondary_variation: payload.secondaryVariation ?? null,
-              tertiary_variation: payload.tertiaryVariation ?? null,
+              primary_variation: storedMedia(payload.primaryVariation) ?? null,
+              secondary_variation: storedMedia(payload.secondaryVariation) ?? null,
+              tertiary_variation: storedMedia(payload.tertiaryVariation) ?? null,
             }),
           },
           token
@@ -400,7 +441,11 @@ export const api = {
       await request<void>(`/products/${id}`, { method: "DELETE" }, token);
     },
     async listCategories(token: string) {
-      return request<TaxonomyItem[]>("/products/categories", {}, token);
+      const categories = await request<TaxonomyItem[]>("/products/categories", {}, token);
+      categories.forEach((category) => {
+        if (category.image_url && category.image_storage_uri) uploadUris.set(category.image_url, category.image_storage_uri);
+      });
+      return categories;
     },
     async listPublicCategories() {
       return request<PublicCategory[]>("/products/categories/public");
@@ -415,7 +460,7 @@ export const api = {
     ) {
       return request<TaxonomyItem>(
         `/products/categories/${id}`,
-        { method: "PATCH", body: JSON.stringify(payload) },
+        { method: "PATCH", body: JSON.stringify({ ...payload, image_url: storedUri(payload.image_url) }) },
         token,
       );
     },

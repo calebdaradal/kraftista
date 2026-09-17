@@ -63,6 +63,13 @@ export default function ProductCategories() {
     setEditDescription("");
   };
 
+  const uploadCategoryImage = async (file: File) => {
+    if (!token) throw new Error("Session expired. Please log in again.");
+    const { image_url } = await api.products.uploadCategoryMedia(file, token);
+    setEditImage(image_url);
+    return image_url;
+  };
+
   const handleUpdate = async () => {
     if (!editing || !editName.trim() || !token) return;
     try {
@@ -247,7 +254,7 @@ export default function ProductCategories() {
                 <ImageUpload
                   label="Upload Category Image"
                   currentImage={editImage || undefined}
-                  onUpload={(url) => setEditImage(url)}
+                  onUpload={uploadCategoryImage}
                   onRemove={() => setEditImage("")}
                 />
               </div>

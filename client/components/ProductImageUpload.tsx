@@ -1,18 +1,19 @@
 import { useState, useRef } from "react";
 import { Upload, X, Star, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ImageStorage } from "@/utils/imageStorage";
 
 interface ProductImageUploadProps {
   images: string[];
   thumbnailIndex?: number;
   onChange: (images: string[], thumbnailIndex: number) => void;
+  onUpload: (file: File) => Promise<string>;
 }
 
 export function ProductImageUpload({
   images,
   thumbnailIndex: _thumbnailIndex = 0,
   onChange,
+  onUpload,
 }: ProductImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -27,14 +28,12 @@ export function ProductImageUpload({
     if (files.length === 0) return;
 
     const newImages: string[] = [...images];
-    // Compress sequentially to keep peak memory low with many large images.
     for (const file of files) {
       if (!file.type.startsWith("image/")) continue;
       try {
-        const dataUrl = await ImageStorage.compressImage(file);
-        newImages.push(dataUrl);
+        newImages.push(await onUpload(file));
       } catch {
-        /* skip files that fail to load/compress */
+        /* Skip files that fail to upload. */
       }
     }
 

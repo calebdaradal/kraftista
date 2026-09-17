@@ -84,7 +84,7 @@ export function Header() {
   const activeCategories = activeCollection ? categoriesByCollection[activeCollection] ?? [] : [];
   const activeCategoryInfo = hoveredCategory ? categoryInfo[hoveredCategory.toLowerCase()] : undefined;
   const isImageSource = (src?: string | null) =>
-    !!src && (src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://"));
+    !!src && (src.startsWith("http://") || src.startsWith("https://"));
 
   const closeShopMenu = () => {
     setIsShopMenuOpen(false);

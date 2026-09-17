@@ -9,7 +9,7 @@ import { ConfirmModal } from "@/components/ConfirmModal";
 import { toast } from "sonner";
 
 export default function Products() {
-  const isImageSource = (src: string) => src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://");
+  const isImageSource = (src: string) => src.startsWith("http://") || src.startsWith("https://");
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");

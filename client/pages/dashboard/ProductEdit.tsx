@@ -170,6 +170,13 @@ export default function ProductEdit() {
     });
   };
 
+  const uploadImage = async (file: File) => {
+    const token = localStorage.getItem("craft_auth_token");
+    if (!token) throw new Error("Session expired. Please log in again.");
+    const { image_url } = await api.products.uploadMedia(file, token);
+    return image_url;
+  };
+
   const handleImagesChange = (newImages: string[], newThumbnailIndex: number) => {
     setImages(newImages);
     setThumbnailIndex(newThumbnailIndex);
@@ -334,6 +341,7 @@ export default function ProductEdit() {
               images={images}
               thumbnailIndex={thumbnailIndex}
               onChange={handleImagesChange}
+              onUpload={uploadImage}
             />
           </div>
 

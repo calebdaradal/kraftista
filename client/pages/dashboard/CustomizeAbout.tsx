@@ -17,7 +17,7 @@ const apiBase =
 const assetBase = apiBase.replace(/\/api\/?$/, "");
 const resolveUrl = (path?: string) => {
   if (!path) return "";
-  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("data:")) return path;
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
   return `${assetBase}${path.startsWith("/") ? "" : "/"}${path}`;
 };
 

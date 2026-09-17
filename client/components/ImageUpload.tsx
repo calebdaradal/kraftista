@@ -1,9 +1,8 @@
 import { useState, useRef } from "react";
 import { Upload, X, Loader } from "lucide-react";
-import { ImageStorage } from "@/utils/imageStorage";
 
 interface ImageUploadProps {
-  onUpload: (imageUrl: string) => void;
+  onUpload: (file: File) => Promise<string>;
   currentImage?: string;
   onRemove?: () => void;
   label?: string;
@@ -29,8 +28,7 @@ export function ImageUpload({
     setError("");
 
     try {
-      const stored = await ImageStorage.uploadImage(file);
-      onUpload(stored.url);
+      await onUpload(file);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {

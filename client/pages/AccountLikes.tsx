@@ -57,7 +57,7 @@ export default function AccountLikes() {
             {products.map((product) => (
               <article key={product.id} className="rounded-xl border border-border bg-card p-4">
                 <div className="mb-3 aspect-square overflow-hidden rounded-lg bg-muted">
-                  {product.image.startsWith("http://") || product.image.startsWith("https://") || product.image.startsWith("data:") ? (
+                  {product.image.startsWith("http://") || product.image.startsWith("https://") ? (
                     <img src={product.image} alt={product.name} className="h-full w-full object-cover" loading="lazy" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-4xl">{product.image}</div>

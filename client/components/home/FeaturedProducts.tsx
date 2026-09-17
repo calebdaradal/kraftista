@@ -5,7 +5,7 @@ import { api, type PublicCategory } from "@/lib/api";
 
 export function FeaturedProducts() {
   const isImageSource = (src?: string | null) =>
-    !!src && (src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://"));
+    !!src && (src.startsWith("http://") || src.startsWith("https://"));
   const [categories, setCategories] = useState<PublicCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 

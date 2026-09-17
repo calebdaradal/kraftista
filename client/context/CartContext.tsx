@@ -39,9 +39,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const sanitizeImageForApi = (image: string) => {
     const value = image?.trim?.() ?? "";
     if (!value) return null;
-    // Never send base64 data-URLs to the API — they are too large and the column
-    // stores only the remote URL.  Any http(s) signed URL is fine regardless of length.
-    if (value.startsWith("data:")) return null;
     return value;
   };
 

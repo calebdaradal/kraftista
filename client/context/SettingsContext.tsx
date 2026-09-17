@@ -58,7 +58,7 @@ const apiOrigin = apiBase.replace(/\/api\/?$/, "");
 
 const toAssetUrl = (assetPath?: string) => {
   if (!assetPath) return "";
-  if (assetPath.startsWith("http://") || assetPath.startsWith("https://") || assetPath.startsWith("data:")) {
+  if (assetPath.startsWith("http://") || assetPath.startsWith("https://")) {
     return assetPath;
   }
   return `${apiOrigin}${assetPath.startsWith("/") ? "" : "/"}${assetPath}`;

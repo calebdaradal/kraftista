@@ -15,7 +15,7 @@ import type {
   TertiaryVariationOption,
 } from "@/data/products";
 import { cn } from "@/lib/utils";
-import { ImageStorage } from "@/utils/imageStorage";
+import { api } from "@/lib/api";
 
 const HEX_PRESETS = [
   "#000000",
@@ -116,11 +116,12 @@ export function ProductVariationsForm({
     onTertiaryChange({ ...tertiaryVariation, options });
 
   const handlePrimaryImage = async (optionId: string, file: File | null) => {
-    if (!file || !file.type.startsWith("image/")) return;
-    const dataUrl = await ImageStorage.compressImage(file);
+    const token = localStorage.getItem("craft_auth_token");
+    if (!file || !file.type.startsWith("image/") || !token) return;
+    const { image_url } = await api.products.uploadMedia(file, token);
     setPrimaryOptions(
       primaryVariation.options.map((o) =>
-        o.id === optionId ? { ...o, image: dataUrl } : o
+        o.id === optionId ? { ...o, image: image_url } : o
       )
     );
   };

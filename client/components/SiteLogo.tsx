@@ -3,7 +3,7 @@ import { useSettings } from "@/context/SettingsContext";
 
 export function resolveAssetUrl(assetPath?: string): string {
   if (!assetPath) return "";
-  if (assetPath.startsWith("http://") || assetPath.startsWith("https://") || assetPath.startsWith("data:")) {
+  if (assetPath.startsWith("http://") || assetPath.startsWith("https://")) {
     return assetPath;
   }
   const apiBase =
