@@ -100,6 +100,7 @@ export default function ProductEdit() {
   const [saleType, setSaleType] = useState<"price" | "percentage">("price");
   const [saleValue, setSaleValue] = useState<number | "">(formData.originalPrice || "");
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -191,6 +192,10 @@ export default function ProductEdit() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSaving) return;
+    if (isUploadingImages) {
+      toast.error("Wait for image uploads to finish before saving.");
+      return;
+    }
     const token = localStorage.getItem("craft_auth_token");
     if (!token) {
       toast.error("Session expired. Please log in again.");
@@ -342,6 +347,7 @@ export default function ProductEdit() {
               thumbnailIndex={thumbnailIndex}
               onChange={handleImagesChange}
               onUpload={uploadImage}
+              onUploadStateChange={setIsUploadingImages}
             />
           </div>
 
@@ -801,8 +807,8 @@ export default function ProductEdit() {
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <button
               type="submit"
-              disabled={isSaving}
-              className="inline-flex min-h-[2.75rem] w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:w-auto"
+              disabled={isSaving || isUploadingImages}
+              className="inline-flex min-h-[2.75rem] w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
             >
               {isSaving ? (
                 <>

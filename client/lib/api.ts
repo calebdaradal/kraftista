@@ -238,7 +238,13 @@ const request = async <T>(path: string, init: RequestInit = {}, token?: string):
         return new Promise(() => {});
       }
     }
-    const message = await response.text();
+    const body = await response.text();
+    let message = body;
+    try {
+      message = (JSON.parse(body) as { detail?: string }).detail || body;
+    } catch {
+      // The response was not JSON.
+    }
     throw new Error(message || `Request failed (${response.status})`);
   }
   if (response.status === 204) {

@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Upload, X, Star, GripVertical } from "lucide-react";
+import { Upload, X, Star, GripVertical, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ProductImageUploadProps {
@@ -7,6 +7,7 @@ interface ProductImageUploadProps {
   thumbnailIndex?: number;
   onChange: (images: string[], thumbnailIndex: number) => void;
   onUpload: (file: File) => Promise<string>;
+  onUploadStateChange?: (uploading: boolean) => void;
 }
 
 export function ProductImageUpload({
@@ -14,10 +15,13 @@ export function ProductImageUpload({
   thumbnailIndex: _thumbnailIndex = 0,
   onChange,
   onUpload,
+  onUploadStateChange,
 }: ProductImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -28,16 +32,24 @@ export function ProductImageUpload({
     if (files.length === 0) return;
 
     const newImages: string[] = [...images];
-    for (const file of files) {
-      if (!file.type.startsWith("image/")) continue;
-      try {
-        newImages.push(await onUpload(file));
-      } catch {
-        /* Skip files that fail to upload. */
+    setError("");
+    setIsUploading(true);
+    onUploadStateChange?.(true);
+    try {
+      for (const file of files) {
+        if (!file.type.startsWith("image/")) continue;
+        try {
+          newImages.push(await onUpload(file));
+        } catch (err) {
+          setError(err instanceof Error ? err.message : `Failed to upload ${file.name}.`);
+          break;
+        }
       }
+      onChange(newImages, 0);
+    } finally {
+      setIsUploading(false);
+      onUploadStateChange?.(false);
     }
-
-    onChange(newImages, 0);
   };
 
   const handleRemoveImage = (index: number) => {
@@ -117,12 +129,19 @@ export function ProductImageUpload({
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="w-full flex items-center justify-center gap-2 px-4 py-4 border-2 border-dashed border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-foreground"
+          disabled={isUploading}
+          className="w-full flex items-center justify-center gap-2 px-4 py-4 border-2 border-dashed border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-foreground disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <Upload className="w-4 h-4" />
-          <span className="text-sm font-semibold">Select Images</span>
+          {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+          <span className="text-sm font-semibold">{isUploading ? "Uploading..." : "Select Images"}</span>
         </button>
       </div>
+
+      {error && (
+        <p className="rounded-lg border border-destructive bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </p>
+      )}
 
       {/* Image Grid */}
       {images.length > 0 && (
