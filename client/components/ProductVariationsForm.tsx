@@ -1,3 +1,4 @@
+import { formatPrice } from "@/utils/currency";
 import { useRef, type ReactNode } from "react";
 import { ChevronDown, ChevronUp, ImagePlus, Plus, Trash2 } from "lucide-react";
 import { newId } from "@/lib/ids";
@@ -134,8 +135,8 @@ export function ProductVariationsForm({
         description={
           <>
             For different designs or styles—name the group, add a photo per option, and set the
-            exact price for that design (for example base {basePrice.toFixed(2)}₱ → this design 
-            {(basePrice + 2).toFixed(2)}).
+            exact price for that design (for example base {formatPrice(basePrice)} → this design
+            {formatPrice(basePrice + 2)}).
           </>
         }
       >
@@ -243,7 +244,7 @@ export function ProductVariationsForm({
 
                 <label className="w-full sm:w-32">
                   <span className="mb-1 block text-xs font-medium text-muted-foreground">
-                    Price (USD)
+                    Price (PHP ₱)
                   </span>
                   <input
                     type="number"
@@ -466,7 +467,7 @@ export function ProductVariationsForm({
         description={
           <>
             Text-only options with an <strong>extra</strong> amount added on top (for example Size:
-            Large +$5.00).
+            Large +{formatPrice(5)}).
           </>
         }
       >
@@ -536,7 +537,7 @@ export function ProductVariationsForm({
 
               <label className="w-full sm:w-40">
                 <span className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Extra price (USD)
+                  Extra price (PHP ₱)
                 </span>
                 <input
                   type="number"

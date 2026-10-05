@@ -1,3 +1,4 @@
+import { formatPrice } from "@/utils/currency";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -223,11 +224,11 @@ export default function Products() {
                       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm">
                         <span className="text-muted-foreground">{product.category}</span>
                         <span className="font-semibold text-foreground">
-                          {product.price.toFixed(2)}₱
+                          {formatPrice(product.price)}
                         </span>
                         {product.originalPrice && (
                           <span className="text-xs text-muted-foreground line-through">
-                            {product.originalPrice.toFixed(2)}₱
+                            {formatPrice(product.originalPrice)}
                           </span>
                         )}
                       </div>
@@ -345,11 +346,11 @@ export default function Products() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <span className="font-semibold text-foreground">
-                        ${product.price.toFixed(2)}
+                        {formatPrice(product.price)}
                       </span>
                       {product.originalPrice && (
                         <p className="text-xs text-muted-foreground line-through">
-                          ${product.originalPrice.toFixed(2)}
+                          {formatPrice(product.originalPrice)}
                         </p>
                       )}
                     </td>

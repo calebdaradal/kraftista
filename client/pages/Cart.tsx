@@ -1,3 +1,4 @@
+import { formatPrice } from "@/utils/currency";
 import { Layout } from "@/components/layout/Layout";
 import { useCart } from "@/context/CartContext";
 import { Link } from "react-router-dom";
@@ -84,7 +85,7 @@ export default function Cart() {
                     )}
 
                     <p className="font-semibold text-primary">
-                      ${item.price.toFixed(2)}
+                      {formatPrice(item.price)}
                     </p>
                   </div>
 
@@ -144,7 +145,7 @@ export default function Cart() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
                     <span className="font-semibold text-foreground">
-                      ₱{totalPrice.toFixed(2)}
+                      {formatPrice(totalPrice)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -154,7 +155,7 @@ export default function Cart() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Tax</span>
                     <span className="font-semibold text-foreground">
-                      ${(totalPrice * 0.08).toFixed(2)}
+                      {formatPrice(totalPrice * 0.08)}
                     </span>
                   </div>
                 </div>
@@ -162,7 +163,7 @@ export default function Cart() {
                 <div className="flex justify-between text-lg">
                   <span className="font-semibold text-foreground">Total</span>
                   <span className="font-bold text-primary text-xl">
-                    {(totalPrice * 1.08).toFixed(2)}₱
+                    {formatPrice(totalPrice * 1.08)}
                   </span>
                 </div>
 

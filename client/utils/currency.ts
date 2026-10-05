@@ -1,7 +1,10 @@
-/**
- * Format a number as Philippine Peso currency.
- * Standard placement: amount followed by ₱.
- */
+const pesoFormatter = new Intl.NumberFormat("en-PH", {
+  style: "currency",
+  currency: "PHP",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 export function formatPrice(amount: number): string {
-  return `${amount.toFixed(2)}₱`;
+  return pesoFormatter.format(amount);
 }

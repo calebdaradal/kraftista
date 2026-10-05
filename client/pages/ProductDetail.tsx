@@ -1,3 +1,4 @@
+import { formatPrice } from "@/utils/currency";
 import { Layout } from "@/components/layout/Layout";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
@@ -449,11 +450,11 @@ export default function ProductDetail() {
               <div className="border-t border-b border-border py-6 space-y-4">
                 <div className="flex items-baseline gap-3">
                   <span className="text-4xl font-bold text-primary">
-                    ${linePrice.toFixed(2)}
+                    {formatPrice(linePrice)}
                   </span>
                   {product.originalPrice && (
                     <span className="text-lg text-muted-foreground line-through">
-                      ${product.originalPrice.toFixed(2)}
+                      {formatPrice(product.originalPrice)}
                     </span>
                   )}
                 </div>
@@ -534,7 +535,7 @@ export default function ProductDetail() {
                                 </div>
                                 <div className="text-center">
                                   <p className="text-xs font-semibold text-foreground">{option.label}</p>
-                                  <p className="text-xs font-medium text-primary">{option.price.toFixed(2)}₱</p>
+                                  <p className="text-xs font-medium text-primary">{formatPrice(option.price)}</p>
                                 </div>
                               </button>
                             ) : (
@@ -554,7 +555,7 @@ export default function ProductDetail() {
                               >
                                 {option.label}
                                 <span className="ml-1.5 text-xs opacity-90">
-                                  ({option.price.toFixed(2)}₱)
+                                  ({formatPrice(option.price)})
                                 </span>
                               </button>
                             );
@@ -633,7 +634,7 @@ export default function ProductDetail() {
                                 {option.label}
                                 {option.additionalPrice > 0 && (
                                   <span className="ml-1.5 text-xs opacity-90">
-                                    (+₱{option.additionalPrice.toFixed(2)})
+                                    (+{formatPrice(option.additionalPrice)})
                                   </span>
                                 )}
                               </button>
@@ -722,7 +723,7 @@ export default function ProductDetail() {
                     <p className="font-semibold text-foreground">
                       Free Shipping
                     </p>
-                    <p className="text-muted-foreground">On orders over $50</p>
+                    <p className="text-muted-foreground">On orders over {formatPrice(50)}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -974,7 +975,7 @@ export default function ProductDetail() {
                         {relatedProduct.name}
                       </h3>
                       <p className="text-lg font-bold text-primary mt-3">
-                        {relatedProduct.price.toFixed(2)}₱
+                        {formatPrice(relatedProduct.price)}
                       </p>
                     </div>
                   </Link>

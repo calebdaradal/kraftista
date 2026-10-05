@@ -1,6 +1,7 @@
+import { formatPrice } from "@/utils/currency";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useEffect, useState } from "react";
-import { BarChart3, Package, Users, TrendingUp, DollarSign, Loader2 } from "lucide-react";
+import { BarChart3, Package, Users, TrendingUp, Banknote, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import type { Product } from "@/types/product";
@@ -28,8 +29,8 @@ export default function Dashboard() {
     },
     {
       label: "Total Sales",
-      value: "$12,450",
-      icon: DollarSign,
+      value: formatPrice(12450),
+      icon: Banknote,
       color: "bg-green-100 text-green-600",
     },
     {
@@ -137,7 +138,7 @@ export default function Dashboard() {
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                     <span className="text-muted-foreground">{product.category}</span>
                     <span className="font-semibold text-foreground">
-                      {product.price.toFixed(2)}₱
+                      {formatPrice(product.price)}
                     </span>
                     <span
                       className={
@@ -221,7 +222,7 @@ export default function Dashboard() {
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-semibold text-foreground text-sm">
-                        ${product.price.toFixed(2)}
+                        {formatPrice(product.price)}
                       </span>
                     </td>
                     <td className="px-4 py-3">

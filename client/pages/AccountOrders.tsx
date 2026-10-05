@@ -7,7 +7,7 @@ import { useUser } from "@/context/UserContext";
 import { ShoppingBag, RotateCcw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-const formatCurrency = (value: number) => `${Number(value || 0).toFixed(2)}₱`;
+import { formatPrice } from "@/utils/currency";
 
 const looksLikeUrl = (value?: string | null) => {
   if (!value) return false;
@@ -180,7 +180,7 @@ export default function AccountOrders() {
                                   </div>
                                 )}
                               </div>
-                              <p className="text-sm font-semibold text-foreground flex-shrink-0">{formatCurrency(item.line_total)}</p>
+                              <p className="text-sm font-semibold text-foreground flex-shrink-0">{formatPrice(Number(item.line_total || 0))}</p>
                             </div>
                           </div>
                         ))}

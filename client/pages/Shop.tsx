@@ -1,3 +1,4 @@
+import { formatPrice } from "@/utils/currency";
 import { Layout } from "@/components/layout/Layout";
 import { ShoppingCart, Heart, Star } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -225,11 +226,11 @@ export default function Shop() {
                   <div className="mt-4 mb-3">
                     <div className="flex items-baseline gap-2">
                       <span className="text-lg font-bold text-primary">
-                        {product.price.toFixed(2)}₱
+                        {formatPrice(product.price)}
                       </span>
                       {product.originalPrice && (
                         <span className="text-xs text-muted-foreground line-through">
-                          {product.originalPrice.toFixed(2)}₱
+                          {formatPrice(product.originalPrice)}
                         </span>
                       )}
                     </div>

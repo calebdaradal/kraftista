@@ -8,7 +8,10 @@ import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 function getHeroImageUrl(imageUrl: string, imageRef?: string) {
-  const resolved = imageUrl.startsWith("/api/") ? resolveAssetUrl(imageUrl) : imageUrl;
+  const normalized = !imageUrl || imageUrl === "/HeaderImage.png"
+    ? DEFAULT_HERO_CUSTOMIZATION.imageUrl
+    : imageUrl;
+  const resolved = normalized.startsWith("/api/") ? resolveAssetUrl(normalized) : normalized;
   if (!imageRef || !resolved) return resolved;
   return `${resolved}${resolved.includes("?") ? "&" : "?"}v=${encodeURIComponent(imageRef)}`;
 }
@@ -167,7 +170,7 @@ export default function CustomizeHero() {
       <ConfirmModal
         open={confirmReset}
         title="Restore Default Hero Image?"
-        message="The uploaded image will be removed and HeaderImage.png will be restored."
+        message="The uploaded image will be removed and HeaderImage.jpg will be restored."
         confirmLabel="Restore Default"
         variant="danger"
         onConfirm={handleReset}

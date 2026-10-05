@@ -1,3 +1,4 @@
+import { formatPrice } from "@/utils/currency";
 import { Layout } from "@/components/layout/Layout";
 import { useUser } from "@/context/UserContext";
 import { api } from "@/lib/api";
@@ -65,7 +66,7 @@ export default function AccountLikes() {
                 </div>
                 <h2 className="line-clamp-1 font-semibold text-foreground">{product.name}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">{product.category}</p>
-                <p className="mt-2 text-sm font-semibold text-foreground">{product.price.toFixed(2)}₱</p>
+                <p className="mt-2 text-sm font-semibold text-foreground">{formatPrice(product.price)}</p>
                 <div className="mt-4 flex gap-2">
                   <Link
                     to={`/product/${product.id}`}

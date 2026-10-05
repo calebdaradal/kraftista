@@ -1,3 +1,4 @@
+import { formatPrice } from "@/utils/currency";
 import { Layout } from "@/components/layout/Layout";
 import { useCart } from "@/context/CartContext";
 import { useUser } from "@/context/UserContext";
@@ -305,7 +306,7 @@ export default function Checkout() {
                         </p>
                       </div>
                       <p className="font-semibold text-foreground">
-                        {(item.price * item.quantity).toFixed(2)}₱
+                        {formatPrice(item.price * item.quantity)}
                       </p>
                     </div>
                   ))}
@@ -394,19 +395,19 @@ export default function Checkout() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
                     <span className="font-semibold text-foreground">
-                      {subtotal.toFixed(2)}₱
+                      {formatPrice(subtotal)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Shipping</span>
                     <span className="font-semibold text-foreground">
-                      {shipping === 0 ? "FREE" : `${shipping.toFixed(2)}₱`}
+                      {shipping === 0 ? "FREE" : formatPrice(shipping)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Tax</span>
                     <span className="font-semibold text-foreground">
-                      {tax.toFixed(2)}₱
+                      {formatPrice(tax)}
                     </span>
                   </div>
                 </div>
@@ -414,7 +415,7 @@ export default function Checkout() {
                 <div className="flex justify-between text-lg">
                   <span className="font-semibold text-foreground">Total</span>
                   <span className="font-bold text-primary text-xl">
-                    ₱{total.toFixed(2)}
+                    {formatPrice(total)}
                   </span>
                 </div>
 

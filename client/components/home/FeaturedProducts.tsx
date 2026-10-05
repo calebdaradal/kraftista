@@ -66,7 +66,7 @@ export function FeaturedProducts() {
                     {category.name}
                   </h3>
                   <span className="mt-2 inline-block text-sm font-semibold text-primary">
-                    Shop Now
+                    Shop Now &gt;
                   </span>
                 </div>
               </Link>
@@ -74,13 +74,13 @@ export function FeaturedProducts() {
           </div>
         )}
 
-        {/* Shop More Button */}
+        {/* View All Button */}
         <div className="text-center mt-12">
           <Link
             to="/shop"
             className="inline-block px-8 py-3 border-2 border-primary text-primary rounded-lg font-semibold hover:bg-primary/5 transition-colors"
           >
-            Shop More
+            View All
           </Link>
         </div>
       </div>

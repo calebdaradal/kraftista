@@ -1,5 +1,18 @@
 import { describe, it, expect } from "vitest";
 import { cn } from "./utils";
+import { formatPrice } from "../utils/currency";
+
+describe("formatPrice", () => {
+  it.each([
+    [0, "₱0.00"],
+    [5, "₱5.00"],
+    [12450, "₱12,450.00"],
+    [12.345, "₱12.35"],
+    [-10.5, "-₱10.50"],
+  ])("formats %s as PHP", (amount, expected) => {
+    expect(formatPrice(amount)).toBe(expected);
+  });
+});
 
 describe("cn function", () => {
   it("should merge classes correctly", () => {

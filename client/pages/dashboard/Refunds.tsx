@@ -1,3 +1,4 @@
+import { formatPrice } from "@/utils/currency";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { OrdersSlider } from "@/components/OrdersSlider";
 import { api, type SellerOrder } from "@/lib/api";
@@ -132,7 +133,7 @@ export default function Refunds() {
                         </p>
                         <p>
                           <span className="text-muted-foreground">Total:</span>{" "}
-                          <span className="font-semibold">${Number(selectedOrder.total).toFixed(2)}</span>
+                          <span className="font-semibold">{formatPrice(Number(selectedOrder.total))}</span>
                         </p>
                         <p>
                           <span className="text-muted-foreground">Order note:</span>{" "}
@@ -169,7 +170,7 @@ export default function Refunds() {
                               )}
                             </div>
                             <p className="text-sm font-semibold text-foreground flex-shrink-0">
-                              ${Number(item.line_total).toFixed(2)}
+                              {formatPrice(Number(item.line_total))}
                             </p>
                           </div>
                         </div>

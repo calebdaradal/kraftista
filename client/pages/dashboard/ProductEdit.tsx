@@ -1,3 +1,4 @@
+import { formatPrice } from "@/utils/currency";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { EMPTY_TIER_VARIATIONS } from "@/data/products";
@@ -362,7 +363,7 @@ export default function ProductEdit() {
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-semibold text-foreground mb-2">
-                    Price
+                    Price (PHP ₱)
                   </label>
                   <input
                     type="number"
@@ -467,7 +468,7 @@ export default function ProductEdit() {
                           : "bg-muted text-foreground hover:bg-muted/80"
                       }`}
                     >
-                      Sale price
+                      Sale price (PHP ₱)
                     </button>
                     <button
                       type="button"
@@ -506,7 +507,7 @@ export default function ProductEdit() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-muted-foreground">Regular price:</span>
-                          <span className="font-semibold text-foreground">{formData.price.toFixed(2)}₱</span>
+                          <span className="font-semibold text-foreground">{formatPrice(formData.price)}</span>
                         </div>
                         {saleType === "percentage" && (
                           <div className="flex justify-between items-center text-sm">
@@ -540,11 +541,11 @@ export default function ProductEdit() {
                         <div className="border-t border-primary/20 pt-2 flex justify-between items-center">
                           <span className="text-sm font-semibold text-foreground">Final price:</span>
                           <span className="text-lg font-bold text-primary">
-                            ${(
+                            {formatPrice(
                               saleType === "percentage"
                                 ? formData.price * (1 - saleValue / 100)
                                 : saleValue
-                            ).toFixed(2)}
+                            )}
                           </span>
                         </div>
                       </div>

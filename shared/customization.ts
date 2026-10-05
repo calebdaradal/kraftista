@@ -169,7 +169,7 @@ export const DEFAULT_ABOUT_CUSTOMIZATION: AboutCustomization = {
 
 export const DEFAULT_HERO_CUSTOMIZATION: HeroCustomization = {
   image: undefined,
-  imageUrl: "/HeaderImage.png",
+  imageUrl: "/HeaderImage.jpg",
   imageAlt: "Kraftista handcrafted and personalized gifts",
 };
 
